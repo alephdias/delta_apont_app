@@ -50,6 +50,30 @@ public class SupabaseAuthService
         }
     }
 
+    /// <summary>Renova a sessão a partir do refresh token (login silencioso). Retorna null se inválido.</summary>
+    public async Task<AuthSession?> RefreshAsync(string refreshToken)
+    {
+        var url = $"{Config.SupabaseUrl}/auth/v1/token?grant_type=refresh_token";
+        using var req = new HttpRequestMessage(HttpMethod.Post, url);
+        req.Headers.TryAddWithoutValidation("apikey", Config.SupabaseAnonKey);
+        req.Content = JsonContent.Create(new { refresh_token = refreshToken });
+
+        using var resp = await Http.SendAsync(req);
+        if (!resp.IsSuccessStatusCode) return null;
+
+        var body = await resp.Content.ReadAsStringAsync();
+        var token = JsonSerializer.Deserialize<TokenResponse>(body, Json.Options);
+        if (token?.access_token is null) return null;
+
+        return new AuthSession
+        {
+            AccessToken = token.access_token,
+            RefreshToken = token.refresh_token ?? refreshToken,
+            Email = token.user?.email ?? "",
+            MustChangePassword = token.user?.user_metadata?.must_change_password ?? false
+        };
+    }
+
     private static string ExtractError(string body, string fallback)
     {
         try

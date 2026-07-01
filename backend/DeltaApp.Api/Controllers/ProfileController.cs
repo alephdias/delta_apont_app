@@ -13,15 +13,19 @@ namespace DeltaApp.Api.Controllers;
 public class ProfileController : ControllerBase
 {
     private readonly AppDbContext _db;
-    public ProfileController(AppDbContext db) => _db = db;
+    private readonly HashSet<string> _adminEmails;
 
-    /// <summary>Retorna o perfil do usuário, criando-o (upsert) no primeiro acesso.</summary>
-    [HttpGet]
-    public async Task<ActionResult<ProfileDto>> Get()
+    public ProfileController(AppDbContext db, IConfiguration config)
     {
-        var profile = await GetOrCreateAsync();
-        return new ProfileDto(profile.UserId, profile.Email, profile.DisplayName, profile.DailyTargetMinutes);
+        _db = db;
+        _adminEmails = (config["Supabase:AdminEmails"] ?? "")
+            .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .Select(e => e.ToLowerInvariant())
+            .ToHashSet();
     }
+
+    [HttpGet]
+    public async Task<ActionResult<ProfileDto>> Get() => Map(await GetOrCreateAsync());
 
     [HttpPut]
     public async Task<ActionResult<ProfileDto>> Update(UpdateProfileDto dto)
@@ -30,7 +34,13 @@ public class ProfileController : ControllerBase
         profile.DisplayName = dto.DisplayName?.Trim();
         if (dto.DailyTargetMinutes > 0) profile.DailyTargetMinutes = dto.DailyTargetMinutes;
         await _db.SaveChangesAsync();
-        return new ProfileDto(profile.UserId, profile.Email, profile.DisplayName, profile.DailyTargetMinutes);
+        return Map(profile);
+    }
+
+    private ProfileDto Map(UserProfile p)
+    {
+        var isAdmin = !string.IsNullOrEmpty(p.Email) && _adminEmails.Contains(p.Email.ToLowerInvariant());
+        return new ProfileDto(p.UserId, p.Email, p.DisplayName, p.DailyTargetMinutes, isAdmin);
     }
 
     private async Task<UserProfile> GetOrCreateAsync()

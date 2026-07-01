@@ -1,11 +1,14 @@
 import { NavLink, Outlet } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "../auth/AuthContext";
+import { ProfileApi } from "../api/client";
 import { Logo } from "./Brand";
 import { ThemeToggle } from "./ThemeToggle";
 
 export function AppLayout() {
   const { session, signOut } = useAuth();
   const email = session?.user?.email ?? "";
+  const { data: profile } = useQuery({ queryKey: ["profile"], queryFn: ProfileApi.get });
 
   return (
     <div className="shell">
@@ -21,6 +24,7 @@ export function AppLayout() {
           <NavLink to="/solicitacoes">Solicitações</NavLink>
           <NavLink to="/empresas">Empresas</NavLink>
           <NavLink to="/aplicativo">Aplicativo</NavLink>
+          {profile?.isAdmin && <NavLink to="/admin">Admin</NavLink>}
         </nav>
         <div className="topbar-end">
           <span className="topbar-user">{email}</span>

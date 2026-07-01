@@ -50,6 +50,7 @@ public partial class ChangePasswordWindow : Window
     private void Logout_Click(object sender, RoutedEventArgs e)
     {
         Session.Current = null;
+        SessionStore.Clear();
         new LoginWindow().Show();
         Close();
     }

@@ -1,7 +1,9 @@
 using System.IO;
+using System.Text.RegularExpressions;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using System.Windows.Interop;
 using System.Windows.Media.Imaging;
 using System.Windows.Threading;
 using Microsoft.Win32;
@@ -23,6 +25,13 @@ public partial class MainWindow : Window
     private int _lastSolicitationId;
     private TimerWidget? _widget;
 
+    private const int HotkeyId = 9000;
+    private const uint VkP = 0x50; // tecla P
+    private HwndSource? _source;
+    private int _tickCount;
+    private bool _autoHandling;
+    private static readonly TimeSpan IdleThreshold = TimeSpan.FromMinutes(10);
+
     public MainWindow()
     {
         InitializeComponent();
@@ -31,7 +40,16 @@ public partial class MainWindow : Window
         _ticker.Tick += Ticker_Tick;
         _ticker.Start();
         Loaded += async (_, _) => await RefreshAllAsync();
-        Closed += (_, _) => { _ticker.Stop(); _widget?.Close(); };
+        Closed += (_, _) =>
+        {
+            _ticker.Stop();
+            _widget?.Close();
+            if (_source is not null)
+            {
+                NativeMethods.UnregisterHotKey(_source.Handle, HotkeyId);
+                _source.RemoveHook(HwndHook);
+            }
+        };
 
         // Ctrl+V cola um print na solicitação selecionada (exceto ao digitar em campos).
         PreviewKeyDown += async (_, e) =>
@@ -100,11 +118,74 @@ public partial class MainWindow : Window
         }
     }
 
-    private void Ticker_Tick(object? sender, EventArgs e)
+    private async void Ticker_Tick(object? sender, EventArgs e)
     {
-        if (_active is null) return;
-        var seconds = _active.AccumulatedTodayMinutes * 60 + (DateTime.Now - _activeFetchedAt).TotalSeconds;
-        ElapsedLabel.Text = FormatHelper.Hms(seconds);
+        if (_active is not null)
+        {
+            var seconds = _active.AccumulatedTodayMinutes * 60 + (DateTime.Now - _activeFetchedAt).TotalSeconds;
+            ElapsedLabel.Text = FormatHelper.Hms(seconds);
+        }
+
+        // A cada ~20s, se estiver rodando e o usuário estiver inativo, pausa sozinho.
+        if (++_tickCount % 20 == 0 && _active is not null && !_autoHandling
+            && NativeMethods.IdleTime() >= IdleThreshold)
+        {
+            _autoHandling = true;
+            try
+            {
+                await _api.PauseAsync();
+                await RefreshActiveAsync();
+                await LoadDayAsync();
+                _widget?.Sync();
+                RunningCode.Text = "⏸ pausado por inatividade";
+            }
+            catch { /* silencioso */ }
+            finally { _autoHandling = false; }
+        }
+    }
+
+    protected override void OnSourceInitialized(EventArgs e)
+    {
+        base.OnSourceInitialized(e);
+        var handle = new WindowInteropHelper(this).Handle;
+        _source = HwndSource.FromHwnd(handle);
+        _source?.AddHook(HwndHook);
+        // Atalho global Ctrl+Alt+P: pausa/continua o cronômetro mesmo sem foco.
+        NativeMethods.RegisterHotKey(handle, HotkeyId, NativeMethods.MOD_CONTROL | NativeMethods.MOD_ALT, VkP);
+    }
+
+    private IntPtr HwndHook(IntPtr hwnd, int msg, IntPtr wParam, IntPtr lParam, ref bool handled)
+    {
+        if (msg == NativeMethods.WM_HOTKEY && wParam.ToInt32() == HotkeyId)
+        {
+            handled = true;
+            _ = ToggleTimerAsync();
+        }
+        return IntPtr.Zero;
+    }
+
+    private async Task ToggleTimerAsync()
+    {
+        try
+        {
+            if (_active is not null)
+            {
+                await _api.PauseAsync();
+                await RefreshActiveAsync();
+                await LoadDayAsync();
+            }
+            else if (_lastSolicitationId > 0)
+            {
+                _active = await _api.StartAsync(_lastSolicitationId);
+                _activeFetchedAt = DateTime.Now;
+                UpdateTimerPanel();
+            }
+            _widget?.Sync();
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(this, ex.Message, "Erro");
+        }
     }
 
     // ---------- Handlers ----------
@@ -221,6 +302,20 @@ public partial class MainWindow : Window
         }
     }
 
+    private void ColarSoPa_Click(object sender, RoutedEventArgs e)
+    {
+        var text = Clipboard.ContainsText() ? Clipboard.GetText() : string.Empty;
+        var m = Regex.Match(text, @"\b(SO|PA)[-\s]?(\d{5,})\b", RegexOptions.IgnoreCase);
+        if (!m.Success)
+        {
+            MessageBox.Show(this, "Não encontrei um número de SO/PA na área de transferência.", "Atenção");
+            return;
+        }
+        TypeCombo.SelectedIndex = m.Groups[1].Value.ToUpperInvariant() == "PA" ? 1 : 0;
+        NumberBox.Text = m.Groups[2].Value;
+        NumberBox.Focus();
+    }
+
     private async void AttachFile_Click(object sender, RoutedEventArgs e)
     {
         if (SolGrid.SelectedItem is not SolicitationDto sol)
@@ -304,6 +399,7 @@ public partial class MainWindow : Window
     private void Logout_Click(object sender, RoutedEventArgs e)
     {
         Session.Current = null;
+        SessionStore.Clear();
         new LoginWindow().Show();
         Close();
     }

@@ -79,6 +79,18 @@ export interface Profile {
   email: string;
   displayName: string | null;
   dailyTargetMinutes: number;
+  isAdmin: boolean;
+}
+
+export interface AdminUser {
+  email: string;
+  createdAt: string | null;
+  lastSignInAt: string | null;
+}
+
+export interface CreatedUser {
+  email: string;
+  password: string;
 }
 
 // ----- Endpoints -----
@@ -140,6 +152,12 @@ export interface Evidence {
   createdAt: string;
   url: string | null;
 }
+
+export const AdminApi = {
+  listUsers: () => api.get<AdminUser[]>("/admin/users").then((r) => r.data),
+  createUser: (email: string) =>
+    api.post<CreatedUser>("/admin/users", { email }).then((r) => r.data),
+};
 
 export const EvidenceApi = {
   list: (solicitationId: number) =>

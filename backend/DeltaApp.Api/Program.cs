@@ -63,6 +63,8 @@ builder.Services.AddAuthorization();
 
 // Supabase Storage (upload de evidências via service key).
 builder.Services.AddHttpClient<StorageService>();
+// Supabase Admin (provisionar usuários via service key).
+builder.Services.AddHttpClient<SupabaseAdminService>();
 
 // Swagger / OpenAPI com suporte a Bearer para testar endpoints autenticados.
 builder.Services.AddEndpointsApiExplorer();

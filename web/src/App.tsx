@@ -9,6 +9,7 @@ import { EmpresasPage } from "./pages/EmpresasPage";
 import { AplicativoPage } from "./pages/AplicativoPage";
 import { SolicitacoesPage } from "./pages/SolicitacoesPage";
 import { ConfiguracoesPage } from "./pages/ConfiguracoesPage";
+import { AdminPage } from "./pages/AdminPage";
 
 export default function App() {
   return (
@@ -35,6 +36,7 @@ export default function App() {
         <Route path="/empresas" element={<EmpresasPage />} />
         <Route path="/aplicativo" element={<AplicativoPage />} />
         <Route path="/configuracoes" element={<ConfiguracoesPage />} />
+        <Route path="/admin" element={<AdminPage />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

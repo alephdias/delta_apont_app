@@ -1112,6 +1112,31 @@ input {
   margin-top: 0.5rem;
 }
 
+/* ---------- Admin: credencial gerada ---------- */
+.cred-box {
+  margin-top: 1rem;
+  border: 1px solid var(--green);
+  background: var(--green-soft);
+  border-radius: var(--radius-sm);
+  padding: 1rem 1.1rem;
+}
+.cred-row {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  margin-bottom: 0.45rem;
+  flex-wrap: wrap;
+}
+.cred-row .eyebrow {
+  min-width: 120px;
+}
+.cred-pass {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--green-deep);
+  letter-spacing: 0.02em;
+}
+
 /* ============================================================
    Aplicativo (download + guia)
    ============================================================ */

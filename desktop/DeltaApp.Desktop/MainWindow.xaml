@@ -56,12 +56,15 @@
                         <TextBlock Text="Nova solicitação" FontWeight="SemiBold" FontSize="14"
                                    Foreground="{StaticResource Text}" Margin="0,0,0,10"/>
                         <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
-                            <ComboBox x:Name="TypeCombo" Width="70" SelectedIndex="0" VerticalContentAlignment="Center">
+                            <ComboBox x:Name="TypeCombo" Width="66" SelectedIndex="0" VerticalContentAlignment="Center">
                                 <ComboBoxItem Content="SO"/>
                                 <ComboBoxItem Content="PA"/>
                             </ComboBox>
-                            <TextBox x:Name="NumberBox" Width="180" Margin="8,0,0,0"
+                            <TextBox x:Name="NumberBox" Width="130" Margin="8,0,0,0"
                                      ToolTip="Número (ex.: 26061542)"/>
+                            <Button Content="Colar SO/PA" Style="{StaticResource GhostButton}"
+                                    Margin="8,0,0,0" Click="ColarSoPa_Click"
+                                    ToolTip="Lê um SO-###### ou PA-###### da área de transferência"/>
                         </StackPanel>
                         <ComboBox x:Name="ClientCombo" IsEditable="True" Margin="0,0,0,8"
                                   VerticalContentAlignment="Center"
