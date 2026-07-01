@@ -567,6 +567,60 @@ input {
   animation: tickRise 0.35s cubic-bezier(0.2, 0.8, 0.2, 1) both;
 }
 
+/* ---------- Barra de filtros + exportar ---------- */
+.daytools {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+}
+.filters {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+.select {
+  padding: 0.45rem 0.6rem;
+  border: 1px solid var(--line-2);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--text);
+  font-size: 0.85rem;
+}
+.seg {
+  display: inline-flex;
+  border: 1px solid var(--line-2);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+.seg button {
+  padding: 0.4rem 0.75rem;
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  font-family: var(--mono);
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+.seg button + button {
+  border-left: 1px solid var(--line);
+}
+.seg button.on {
+  background: var(--brand);
+  color: var(--on-brand);
+}
+.seg button:hover:not(.on) {
+  color: var(--text);
+}
+.daytools .actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
 /* ============================================================
    Readout list (dia)
    ============================================================ */

@@ -4,24 +4,43 @@ import { DayEntriesApi, ProfileApi } from "../api/client";
 import { DayEntryRow } from "../components/DayEntryRow";
 import { QuarterMeter } from "../components/QuarterMeter";
 import { addDays, formatMinutes, longDate, todayIso } from "../lib/format";
+import { copyText, downloadCsv, toCsv, toTsv } from "../lib/export";
+
+type TypeFilter = "" | "SO" | "PA";
 
 export function DayViewPage() {
   const [date, setDate] = useState(todayIso());
+  const [clientFilter, setClientFilter] = useState("");
+  const [typeFilter, setTypeFilter] = useState<TypeFilter>("");
+  const [copied, setCopied] = useState(false);
 
   const { data: entries, isLoading } = useQuery({
     queryKey: ["dayentries", date],
     queryFn: () => DayEntriesApi.byDate(date),
   });
-  const { data: profile } = useQuery({
-    queryKey: ["profile"],
-    queryFn: ProfileApi.get,
-  });
+  const { data: profile } = useQuery({ queryKey: ["profile"], queryFn: ProfileApi.get });
 
-  const totalReal = entries?.reduce((s, e) => s + e.realMinutes, 0) ?? 0;
-  const totalAdj = entries?.reduce((s, e) => s + e.adjustedMinutes, 0) ?? 0;
+  const all = entries ?? [];
+  const clientsInDay = [...new Set(all.map((e) => e.clientName).filter(Boolean))].sort() as string[];
+  const filtered = all.filter(
+    (e) =>
+      (!clientFilter || e.clientName === clientFilter) &&
+      (!typeFilter || e.type === typeFilter)
+  );
+
+  // O medidor reflete o dia inteiro (a meta é do dia), não o filtro.
+  const totalReal = all.reduce((s, e) => s + e.realMinutes, 0);
+  const totalAdj = all.reduce((s, e) => s + e.adjustedMinutes, 0);
   const target = profile?.dailyTargetMinutes ?? 360;
   const delta = totalAdj - totalReal;
   const remaining = Math.max(0, target - totalAdj);
+
+  const copyDay = async () => {
+    await copyText(toTsv(filtered));
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+  const csvDay = () => downloadCsv(`apontamentos-${date}.csv`, toCsv(filtered));
 
   return (
     <div>
@@ -34,19 +53,13 @@ export function DayViewPage() {
           <button className="icon-btn" onClick={() => setDate(addDays(date, -1))} aria-label="dia anterior">
             ‹
           </button>
-          <input
-            type="date"
-            className="date-input"
-            value={date}
-            onChange={(e) => setDate(e.target.value)}
-          />
+          <input type="date" className="date-input" value={date} onChange={(e) => setDate(e.target.value)} />
           <button className="icon-btn" onClick={() => setDate(addDays(date, 1))} aria-label="próximo dia">
             ›
           </button>
         </div>
       </div>
 
-      {/* Herói: o medidor de quartos de hora */}
       <div className="gauge">
         <div className="gauge-top">
           <div>
@@ -85,18 +98,63 @@ export function DayViewPage() {
         </div>
       </div>
 
+      {all.length > 0 && (
+        <div className="daytools">
+          <div className="filters">
+            <select
+              className="select"
+              value={clientFilter}
+              onChange={(e) => setClientFilter(e.target.value)}
+              aria-label="Filtrar por empresa"
+            >
+              <option value="">Todas as empresas</option>
+              {clientsInDay.map((c) => (
+                <option key={c} value={c}>
+                  {c}
+                </option>
+              ))}
+            </select>
+            <div className="seg" role="group" aria-label="Filtrar por tipo">
+              {(["", "SO", "PA"] as TypeFilter[]).map((t) => (
+                <button
+                  key={t || "all"}
+                  className={typeFilter === t ? "on" : ""}
+                  onClick={() => setTypeFilter(t)}
+                >
+                  {t === "" ? "Todos" : t}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div className="actions">
+            <button className="btn btn-ghost btn-sm" onClick={copyDay}>
+              {copied ? "✓ copiado" : "Copiar"}
+            </button>
+            <button className="btn btn-ghost btn-sm" onClick={csvDay}>
+              CSV
+            </button>
+          </div>
+        </div>
+      )}
+
       <div className="section-label">
         <span className="eyebrow">Solicitações do dia</span>
-        <span className="eyebrow">{entries?.length ?? 0} registro(s)</span>
+        <span className="eyebrow">
+          {filtered.length}
+          {filtered.length !== all.length ? ` de ${all.length}` : ""} registro
+          {all.length === 1 && filtered.length === 1 ? "" : "s"}
+        </span>
       </div>
 
       {isLoading ? (
         <div className="placeholder">carregando…</div>
-      ) : !entries?.length ? (
+      ) : !all.length ? (
         <div className="placeholder">nenhum apontamento neste dia</div>
+      ) : !filtered.length ? (
+        <div className="placeholder">nenhum registro com esse filtro</div>
       ) : (
         <div className="list">
-          {entries.map((e) => (
+          {filtered.map((e) => (
             <DayEntryRow key={e.solicitationId} entry={e} date={date} />
           ))}
         </div>
