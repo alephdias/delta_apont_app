@@ -119,12 +119,17 @@
 
                 <Border Grid.Row="1" Style="{StaticResource Card}" Margin="0,0,0,16">
                     <StackPanel>
-                        <TextBlock Text="Evidência (link) na solicitação selecionada" FontWeight="SemiBold"
+                        <TextBlock Text="Evidências na solicitação selecionada" FontWeight="SemiBold"
                                    FontSize="14" Foreground="{StaticResource Text}" Margin="0,0,0,8"/>
                         <StackPanel Orientation="Horizontal">
-                            <TextBox x:Name="EvidenceBox" Width="360" ToolTip="Cole um link / caminho"/>
-                            <Button Content="Adicionar" Style="{StaticResource PrimaryButton}"
+                            <TextBox x:Name="EvidenceBox" Width="200" ToolTip="Cole um link / caminho"/>
+                            <Button Content="Link" Style="{StaticResource PrimaryButton}"
                                     Margin="8,0,0,0" Click="AddEvidence_Click"/>
+                            <Button Content="Anexar arquivo" Style="{StaticResource GhostButton}"
+                                    Margin="8,0,0,0" Click="AttachFile_Click"/>
+                            <Button Content="Colar print" Style="{StaticResource GhostButton}"
+                                    Margin="8,0,0,0" Click="PastePrint_Click"
+                                    ToolTip="Cola a imagem da área de transferência (ou use Ctrl+V)"/>
                         </StackPanel>
                     </StackPanel>
                 </Border>

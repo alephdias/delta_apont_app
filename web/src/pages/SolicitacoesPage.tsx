@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ClientsApi, SolicitationsApi } from "../api/client";
 import type { ClientItem, Solicitation } from "../api/client";
+import { EvidencePanel } from "../components/EvidencePanel";
 
 function messageOf(e: unknown): string {
   const data = (e as { response?: { data?: unknown } })?.response?.data;
@@ -104,6 +105,7 @@ function SolRow({
 }) {
   const qc = useQueryClient();
   const [editing, setEditing] = useState(false);
+  const [showEv, setShowEv] = useState(false);
   const [title, setTitle] = useState(sol.title ?? "");
   const [clientId, setClientId] = useState<string>(sol.clientId ? String(sol.clientId) : "");
   const number = sol.number;
@@ -203,6 +205,12 @@ function SolRow({
           </>
         ) : (
           <>
+            <button
+              className={"btn btn-ghost btn-sm" + (showEv ? " on" : "")}
+              onClick={() => setShowEv((v) => !v)}
+            >
+              Evidências
+            </button>
             <button className="btn btn-ghost btn-sm" onClick={() => setEditing(true)}>
               Editar
             </button>
@@ -221,6 +229,7 @@ function SolRow({
           </>
         )}
       </div>
+      {showEv && <EvidencePanel solicitationId={sol.id} />}
     </div>
   );
 }

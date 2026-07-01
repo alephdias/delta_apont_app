@@ -1,6 +1,10 @@
+using System.IO;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Input;
+using System.Windows.Media.Imaging;
 using System.Windows.Threading;
+using Microsoft.Win32;
 using DeltaApp.Desktop.Models;
 using DeltaApp.Desktop.Services;
 
@@ -28,6 +32,17 @@ public partial class MainWindow : Window
         _ticker.Start();
         Loaded += async (_, _) => await RefreshAllAsync();
         Closed += (_, _) => { _ticker.Stop(); _widget?.Close(); };
+
+        // Ctrl+V cola um print na solicitação selecionada (exceto ao digitar em campos).
+        PreviewKeyDown += async (_, e) =>
+        {
+            if (e.Key == Key.V && Keyboard.Modifiers == ModifierKeys.Control
+                && Keyboard.FocusedElement is not TextBox && Clipboard.ContainsImage())
+            {
+                e.Handled = true;
+                await PastePrintAsync();
+            }
+        };
     }
 
     private DateOnly SelectedDate =>
@@ -205,6 +220,73 @@ public partial class MainWindow : Window
             MessageBox.Show(this, ex.Message, "Erro");
         }
     }
+
+    private async void AttachFile_Click(object sender, RoutedEventArgs e)
+    {
+        if (SolGrid.SelectedItem is not SolicitationDto sol)
+        {
+            MessageBox.Show(this, "Selecione uma solicitação na lista.", "Atenção");
+            return;
+        }
+        var dlg = new OpenFileDialog
+        {
+            Title = "Anexar evidência",
+            Filter = "Arquivos (imagens, PDF, docs)|*.png;*.jpg;*.jpeg;*.gif;*.pdf;*.txt;*.docx;*.xlsx|Todos|*.*"
+        };
+        if (dlg.ShowDialog(this) != true) return;
+        try
+        {
+            var bytes = await File.ReadAllBytesAsync(dlg.FileName);
+            await _api.UploadEvidenceAsync(sol.Id, bytes, Path.GetFileName(dlg.FileName), ContentTypeOf(dlg.FileName));
+            MessageBox.Show(this, "Arquivo anexado.", "Delta Decisão");
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(this, ex.Message, "Erro");
+        }
+    }
+
+    private async void PastePrint_Click(object sender, RoutedEventArgs e) => await PastePrintAsync();
+
+    private async Task PastePrintAsync()
+    {
+        if (SolGrid.SelectedItem is not SolicitationDto sol)
+        {
+            MessageBox.Show(this, "Selecione uma solicitação na lista.", "Atenção");
+            return;
+        }
+        if (!Clipboard.ContainsImage())
+        {
+            MessageBox.Show(this, "Não há imagem na área de transferência.", "Atenção");
+            return;
+        }
+        try
+        {
+            var img = Clipboard.GetImage();
+            if (img is null) return;
+            using var ms = new MemoryStream();
+            var encoder = new PngBitmapEncoder();
+            encoder.Frames.Add(BitmapFrame.Create(img));
+            encoder.Save(ms);
+            var name = $"print-{DateTime.Now:yyyyMMdd-HHmmss}.png";
+            await _api.UploadEvidenceAsync(sol.Id, ms.ToArray(), name, "image/png", "colado");
+            MessageBox.Show(this, "Print anexado.", "Delta Decisão");
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(this, ex.Message, "Erro");
+        }
+    }
+
+    private static string ContentTypeOf(string path) => Path.GetExtension(path).ToLowerInvariant() switch
+    {
+        ".png" => "image/png",
+        ".jpg" or ".jpeg" => "image/jpeg",
+        ".gif" => "image/gif",
+        ".pdf" => "application/pdf",
+        ".txt" => "text/plain",
+        _ => "application/octet-stream",
+    };
 
     private void OpenWidget_Click(object sender, RoutedEventArgs e)
     {

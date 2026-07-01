@@ -1,6 +1,7 @@
 using System.Text;
 using System.Text.Json.Serialization;
 using DeltaApp.Api.Data;
+using DeltaApp.Api.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -59,6 +60,9 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     });
 
 builder.Services.AddAuthorization();
+
+// Supabase Storage (upload de evidências via service key).
+builder.Services.AddHttpClient<StorageService>();
 
 // Swagger / OpenAPI com suporte a Bearer para testar endpoints autenticados.
 builder.Services.AddEndpointsApiExplorer();

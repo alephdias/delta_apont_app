@@ -130,3 +130,30 @@ export const ProfileApi = {
   update: (body: { displayName?: string | null; dailyTargetMinutes: number }) =>
     api.put<Profile>("/profile", body).then((r) => r.data),
 };
+
+export interface Evidence {
+  id: number;
+  solicitationId: number;
+  kind: "Link" | "File";
+  value: string;
+  caption: string | null;
+  createdAt: string;
+  url: string | null;
+}
+
+export const EvidenceApi = {
+  list: (solicitationId: number) =>
+    api.get<Evidence[]>("/evidence", { params: { solicitationId } }).then((r) => r.data),
+  addLink: (solicitationId: number, value: string, caption?: string | null) =>
+    api
+      .post<Evidence>("/evidence", { solicitationId, kind: "Link", value, caption })
+      .then((r) => r.data),
+  upload: (solicitationId: number, file: File, caption?: string | null) => {
+    const fd = new FormData();
+    fd.append("solicitationId", String(solicitationId));
+    if (caption) fd.append("caption", caption);
+    fd.append("file", file);
+    return api.post<Evidence>("/evidence/upload", fd).then((r) => r.data);
+  },
+  remove: (id: number) => api.delete(`/evidence/${id}`),
+};

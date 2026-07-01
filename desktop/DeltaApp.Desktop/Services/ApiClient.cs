@@ -74,4 +74,22 @@ public class ApiClient
     public Task<EvidenceDto?> AddLinkEvidenceAsync(int solicitationId, string value, string? caption)
         => SendAsync<EvidenceDto>(Build(HttpMethod.Post, "evidence",
             new { solicitationId, kind = "Link", value, caption }));
+
+    public async Task UploadEvidenceAsync(int solicitationId, byte[] data, string fileName, string contentType, string? caption = null)
+    {
+        using var form = new MultipartFormDataContent
+        {
+            { new StringContent(solicitationId.ToString()), "solicitationId" }
+        };
+        if (!string.IsNullOrEmpty(caption)) form.Add(new StringContent(caption), "caption");
+        var fileContent = new ByteArrayContent(data);
+        fileContent.Headers.ContentType = new MediaTypeHeaderValue(contentType);
+        form.Add(fileContent, "file", fileName);
+
+        var req = new HttpRequestMessage(HttpMethod.Post, "evidence/upload") { Content = form };
+        req.Headers.Authorization = new AuthenticationHeaderValue("Bearer", Session.Current!.AccessToken);
+        using var resp = await Http.SendAsync(req);
+        if (!resp.IsSuccessStatusCode)
+            throw new InvalidOperationException($"API {(int)resp.StatusCode}: {await resp.Content.ReadAsStringAsync()}");
+    }
 }
