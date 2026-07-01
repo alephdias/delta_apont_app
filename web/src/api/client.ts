@@ -1,23 +1,108 @@
 import axios from "axios";
+import { supabase } from "../lib/supabase";
 
 export const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL ?? "https://localhost:7291/api",
-  headers: { "Content-Type": "application/json" },
+  baseURL: import.meta.env.VITE_API_URL ?? "http://localhost:5213/api",
 });
 
-export interface Item {
+// Anexa o access_token do Supabase em toda requisição.
+api.interceptors.request.use(async (config) => {
+  const { data } = await supabase.auth.getSession();
+  const token = data.session?.access_token;
+  if (token) config.headers.Authorization = `Bearer ${token}`;
+  return config;
+});
+
+// Em 401, encerra a sessão (o ProtectedRoute redireciona para o login).
+api.interceptors.response.use(
+  (r) => r,
+  async (error) => {
+    if (error.response?.status === 401) await supabase.auth.signOut();
+    return Promise.reject(error);
+  }
+);
+
+// ----- Tipos (espelham os DTOs da API) -----
+export interface ClientItem {
   id: number;
   name: string;
-  description?: string | null;
   createdAt: string;
 }
 
-export const ItemsApi = {
-  list: () => api.get<Item[]>("/items").then((r) => r.data),
-  get: (id: number) => api.get<Item>(`/items/${id}`).then((r) => r.data),
-  create: (data: Pick<Item, "name" | "description">) =>
-    api.post<Item>("/items", data).then((r) => r.data),
-  update: (id: number, data: Pick<Item, "name" | "description">) =>
-    api.put(`/items/${id}`, data),
-  remove: (id: number) => api.delete(`/items/${id}`),
+export interface Solicitation {
+  id: number;
+  type: "SO" | "PA";
+  number: string;
+  code: string;
+  clientId: number | null;
+  clientName: string | null;
+  title: string | null;
+  description: string | null;
+  isArchived: boolean;
+  createdAt: string;
+}
+
+export interface DayEntry {
+  id: number;
+  solicitationId: number;
+  code: string;
+  type: string;
+  clientName: string | null;
+  title: string | null;
+  workDate: string;
+  realMinutes: number;
+  adjustedMinutes: number;
+  suggestedMinutes: number;
+  firstStart: string | null;
+  lastEnd: string | null;
+  isRunning: boolean;
+  notes: string | null;
+}
+
+export interface MonthDaySummary {
+  workDate: string;
+  totalAdjustedMinutes: number;
+  targetMinutes: number;
+  metTarget: boolean;
+}
+
+export interface MonthSummary {
+  month: string;
+  targetMinutes: number;
+  totalAdjustedMinutes: number;
+  days: MonthDaySummary[];
+}
+
+export interface Profile {
+  userId: string;
+  email: string;
+  displayName: string | null;
+  dailyTargetMinutes: number;
+}
+
+// ----- Endpoints -----
+export const ClientsApi = {
+  list: () => api.get<ClientItem[]>("/clients").then((r) => r.data),
+};
+
+export const SolicitationsApi = {
+  list: (params?: { date?: string; clientId?: number }) =>
+    api.get<Solicitation[]>("/solicitations", { params }).then((r) => r.data),
+};
+
+export const DayEntriesApi = {
+  byDate: (date: string) =>
+    api.get<DayEntry[]>("/dayentries", { params: { date } }).then((r) => r.data),
+  month: (month: string) =>
+    api.get<MonthSummary>("/dayentries/month", { params: { month } }).then((r) => r.data),
+  upsert: (body: {
+    solicitationId: number;
+    workDate: string;
+    adjustedMinutes: number;
+    notes?: string | null;
+  }) => api.put<DayEntry>("/dayentries", body).then((r) => r.data),
+};
+
+export const ProfileApi = {
+  get: () => api.get<Profile>("/profile").then((r) => r.data),
 };
