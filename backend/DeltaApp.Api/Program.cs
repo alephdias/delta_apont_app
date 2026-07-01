@@ -3,6 +3,13 @@ using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Render injeta a porta via variavel de ambiente PORT. Em producao escutamos nela (0.0.0.0).
+var port = Environment.GetEnvironmentVariable("PORT");
+if (!string.IsNullOrEmpty(port))
+{
+    builder.WebHost.UseUrls($"http://0.0.0.0:{port}");
+}
+
 // --- Services ---
 builder.Services.AddControllers();
 
@@ -14,29 +21,41 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-// CORS: libera o front (web React e desktop em dev). Ajuste as origens em producao.
+// CORS: origens vem de config (Cors:AllowedOrigins). Em dev, cai no fallback do Vite.
 const string CorsPolicy = "DeltaAppCors";
+var allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>()
+    ?? new[]
+    {
+        "http://localhost:5173", // Vite dev
+        "http://localhost:4173"  // Vite preview
+    };
 builder.Services.AddCors(options =>
 {
     options.AddPolicy(CorsPolicy, policy =>
-        policy.WithOrigins(
-                "http://localhost:5173", // Vite dev
-                "http://localhost:4173"  // Vite preview
-            )
+        policy.WithOrigins(allowedOrigins)
             .AllowAnyHeader()
             .AllowAnyMethod());
 });
 
 var app = builder.Build();
 
-// --- HTTP pipeline ---
-if (app.Environment.IsDevelopment())
+// Aplica migracoes pendentes no startup (cria/atualiza o schema no deploy).
+using (var scope = app.Services.CreateScope())
 {
-    app.UseSwagger();
-    app.UseSwaggerUI();
+    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+    db.Database.Migrate();
 }
 
-app.UseHttpsRedirection();
+// --- HTTP pipeline ---
+app.UseSwagger();
+app.UseSwaggerUI();
+
+// Render/Vercel terminam o TLS no proxy; so redirecionamos para HTTPS em desenvolvimento.
+if (app.Environment.IsDevelopment())
+{
+    app.UseHttpsRedirection();
+}
+
 app.UseCors(CorsPolicy);
 app.UseAuthorization();
 app.MapControllers();

@@ -1,0 +1,28 @@
+# Build artifacts
+**/bin/
+**/obj/
+
+# Frontend (nao entra na imagem do backend)
+web/
+
+# Desktop (nao entra na imagem do backend)
+desktop/
+
+# Git / editor / tooling
+.git/
+.gitignore
+.vs/
+.idea/
+.claude/
+.agents/
+skills-lock.json
+
+# Secrets locais (nunca vao para a imagem)
+**/appsettings.Development.json
+**/appsettings.Production.json
+**/.env
+**/.env.*
+
+# Docs
+docs/
+README.md

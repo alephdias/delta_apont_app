@@ -1,0 +1,17 @@
+# Blueprint do Render (https://render.com/docs/blueprint-spec)
+# Cria o servico web do backend a partir do Dockerfile na raiz.
+services:
+  - type: web
+    name: delta-apont-api
+    runtime: docker
+    plan: free
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    healthCheckPath: /swagger/index.html
+    envVars:
+      # Connection string do Supabase. Definida no dashboard (sync:false = nao versionada).
+      - key: ConnectionStrings__DefaultConnection
+        sync: false
+      # Origem do frontend no Vercel para o CORS. Ajuste com a URL real do Vercel.
+      - key: Cors__AllowedOrigins__0
+        sync: false
