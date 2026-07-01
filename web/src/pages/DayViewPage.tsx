@@ -2,24 +2,8 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { DayEntriesApi, ProfileApi } from "../api/client";
 import { DayEntryRow } from "../components/DayEntryRow";
-import { formatMinutes, todayIso } from "../lib/format";
-
-function Stat({
-  label,
-  value,
-  accent,
-}: {
-  label: string;
-  value: string;
-  accent?: boolean;
-}) {
-  return (
-    <div className={`stat${accent ? " stat-accent" : ""}`}>
-      <span className="stat-label">{label}</span>
-      <span className="stat-value">{value}</span>
-    </div>
-  );
-}
+import { QuarterMeter } from "../components/QuarterMeter";
+import { addDays, formatMinutes, longDate, todayIso } from "../lib/format";
 
 export function DayViewPage() {
   const [date, setDate] = useState(todayIso());
@@ -36,59 +20,87 @@ export function DayViewPage() {
   const totalReal = entries?.reduce((s, e) => s + e.realMinutes, 0) ?? 0;
   const totalAdj = entries?.reduce((s, e) => s + e.adjustedMinutes, 0) ?? 0;
   const target = profile?.dailyTargetMinutes ?? 360;
+  const delta = totalAdj - totalReal;
+  const remaining = Math.max(0, target - totalAdj);
 
   return (
-    <div className="page">
+    <div>
       <div className="page-head">
         <div>
+          <span className="eyebrow">Apontamentos</span>
           <h2>Meu dia</h2>
-          <p className="muted">Solicitações que você atendeu no dia.</p>
         </div>
-        <input
-          type="date"
-          className="date-input"
-          value={date}
-          onChange={(e) => setDate(e.target.value)}
-        />
+        <div className="date-nav">
+          <button className="icon-btn" onClick={() => setDate(addDays(date, -1))} aria-label="dia anterior">
+            ‹
+          </button>
+          <input
+            type="date"
+            className="date-input"
+            value={date}
+            onChange={(e) => setDate(e.target.value)}
+          />
+          <button className="icon-btn" onClick={() => setDate(addDays(date, 1))} aria-label="próximo dia">
+            ›
+          </button>
+        </div>
       </div>
 
-      <div className="stat-row">
-        <Stat label="Tempo real" value={formatMinutes(totalReal)} />
-        <Stat label="Apontado" value={formatMinutes(totalAdj)} accent />
-        <Stat label="Meta do dia" value={formatMinutes(target)} />
-        <Stat
-          label="Falta p/ meta"
-          value={formatMinutes(Math.max(0, target - totalAdj))}
-        />
+      {/* Herói: o medidor de quartos de hora */}
+      <div className="gauge">
+        <div className="gauge-top">
+          <div>
+            <span className="eyebrow" style={{ display: "block", marginBottom: "0.5rem" }}>
+              Apontado · {longDate(date)}
+            </span>
+            <div className="gauge-figure">
+              {formatMinutes(totalAdj)} <span className="of">/ {formatMinutes(target)}</span>
+            </div>
+          </div>
+          <div className="gauge-right">
+            <span className="eyebrow">Meta do dia</span>
+            <div className="gauge-target">{formatMinutes(target)}</div>
+          </div>
+        </div>
+
+        <QuarterMeter key={date} adjustedMinutes={totalAdj} targetMinutes={target} animate />
+
+        <div className="gauge-legend">
+          <span>
+            tempo real <b>{formatMinutes(totalReal)}</b>
+          </span>
+          <span>
+            apontado <b>{formatMinutes(totalAdj)}</b>{" "}
+            <span className="delta-chip">{delta > 0 ? `Δ +${delta}m` : "Δ ±0"}</span>
+          </span>
+          <span>
+            {remaining > 0 ? (
+              <>
+                falta <b>{formatMinutes(remaining)}</b>
+              </>
+            ) : (
+              <b className="delta-chip">meta batida</b>
+            )}
+          </span>
+        </div>
       </div>
 
-      <div className="card">
-        {isLoading ? (
-          <div className="empty">Carregando…</div>
-        ) : !entries?.length ? (
-          <div className="empty">Nenhum apontamento neste dia.</div>
-        ) : (
-          <table className="table">
-            <thead>
-              <tr>
-                <th>Solicitação</th>
-                <th>Cliente</th>
-                <th className="num">Início</th>
-                <th className="num">Fim</th>
-                <th className="num">Real</th>
-                <th className="num">Apontado</th>
-                <th>Observações</th>
-                <th></th>
-              </tr>
-            </thead>
-            <tbody>
-              {entries.map((e) => (
-                <DayEntryRow key={e.solicitationId} entry={e} date={date} />
-              ))}
-            </tbody>
-          </table>
-        )}
+      <div className="section-label">
+        <span className="eyebrow">Solicitações do dia</span>
+        <span className="eyebrow">{entries?.length ?? 0} registro(s)</span>
       </div>
+
+      {isLoading ? (
+        <div className="placeholder">carregando…</div>
+      ) : !entries?.length ? (
+        <div className="placeholder">nenhum apontamento neste dia</div>
+      ) : (
+        <div className="list">
+          {entries.map((e) => (
+            <DayEntryRow key={e.solicitationId} entry={e} date={date} />
+          ))}
+        </div>
+      )}
     </div>
   );
 }

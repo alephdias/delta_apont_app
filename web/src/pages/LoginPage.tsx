@@ -29,17 +29,19 @@ export function LoginPage() {
   };
 
   return (
-    <div className="auth-screen">
+    <div className="auth">
       <form className="auth-card" onSubmit={onSubmit}>
-        <div className="auth-brand">
-          <span className="brand-mark">Δ</span>
+        <div className="auth-head">
+          <span className="delta-mark">Δ</span>
           <h1>Delta Apont</h1>
         </div>
+        <p className="eyebrow">Controle de apontamentos</p>
         <p className="auth-sub">Entre com sua conta da empresa.</p>
 
         <label className="field">
           <span>E-mail</span>
           <input
+            className="input"
             type="email"
             autoComplete="username"
             value={email}
@@ -52,6 +54,7 @@ export function LoginPage() {
         <label className="field">
           <span>Senha</span>
           <input
+            className="input"
             type="password"
             autoComplete="current-password"
             value={password}
@@ -60,9 +63,9 @@ export function LoginPage() {
           />
         </label>
 
-        {error && <div className="alert alert-error">{error}</div>}
+        {error && <div className="alert-error">{error}</div>}
 
-        <button className="btn btn-primary btn-block" disabled={loading}>
+        <button className="btn btn-ink btn-block" disabled={loading}>
           {loading ? "Entrando…" : "Entrar"}
         </button>
       </form>

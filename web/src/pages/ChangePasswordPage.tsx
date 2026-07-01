@@ -33,19 +33,20 @@ export function ChangePasswordPage() {
   };
 
   return (
-    <div className="auth-screen">
+    <div className="auth">
       <form className="auth-card" onSubmit={onSubmit}>
-        <div className="auth-brand">
-          <span className="brand-mark">Δ</span>
-          <h1>Definir nova senha</h1>
+        <div className="auth-head">
+          <span className="delta-mark">Δ</span>
+          <h1>Delta Apont</h1>
         </div>
-        <p className="auth-sub">
-          Este é seu primeiro acesso. Escolha uma senha de sua preferência.
-        </p>
+        <p className="eyebrow">Primeiro acesso</p>
+        <h2 className="auth-title">Defina sua senha</h2>
+        <p className="auth-sub">Escolha uma senha de sua preferência para continuar.</p>
 
         <label className="field">
           <span>Nova senha</span>
           <input
+            className="input"
             type="password"
             autoComplete="new-password"
             value={password}
@@ -57,6 +58,7 @@ export function ChangePasswordPage() {
         <label className="field">
           <span>Confirmar senha</span>
           <input
+            className="input"
             type="password"
             autoComplete="new-password"
             value={confirm}
@@ -65,14 +67,15 @@ export function ChangePasswordPage() {
           />
         </label>
 
-        {error && <div className="alert alert-error">{error}</div>}
+        {error && <div className="alert-error">{error}</div>}
 
-        <button className="btn btn-primary btn-block" disabled={loading}>
+        <button className="btn btn-ink btn-block" disabled={loading}>
           {loading ? "Salvando…" : "Salvar e continuar"}
         </button>
         <button
           type="button"
           className="btn btn-ghost btn-block"
+          style={{ marginTop: "0.6rem" }}
           onClick={() => signOut()}
         >
           Sair

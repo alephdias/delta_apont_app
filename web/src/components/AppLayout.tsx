@@ -6,26 +6,26 @@ export function AppLayout() {
   const email = session?.user?.email ?? "";
 
   return (
-    <div className="app-shell">
+    <div className="shell">
       <header className="topbar">
         <div className="brand">
-          <span className="brand-mark">Δ</span>
+          <span className="delta-mark">Δ</span>
           <span className="brand-name">Delta Apont</span>
         </div>
-        <nav className="topnav">
+        <nav className="nav">
           <NavLink to="/" end>
             Meu dia
           </NavLink>
           <NavLink to="/fechamento">Fechamento</NavLink>
         </nav>
-        <div className="topbar-user">
-          <span className="user-email">{email}</span>
-          <button className="btn btn-ghost" onClick={() => signOut()}>
+        <div className="topbar-end">
+          <span className="topbar-user">{email}</span>
+          <button className="btn btn-ghost btn-sm" onClick={() => signOut()}>
             Sair
           </button>
         </div>
       </header>
-      <main className="app-main">
+      <main className="main">
         <Outlet />
       </main>
     </div>
