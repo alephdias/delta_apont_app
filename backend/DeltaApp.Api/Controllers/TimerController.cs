@@ -27,10 +27,10 @@ public class TimerController : ControllerBase
             .FirstOrDefaultAsync(i => i.UserId == userId && i.EndedAt == null);
         if (open is null) return Ok((ActiveTimerDto?)null);
 
-        var acc = await AccumulatedTodayAsync(userId, open.SolicitationId);
+        var prior = await PriorSecondsAsync(userId, open.SolicitationId, AppTime.TodayLocal());
         return Ok(new ActiveTimerDto(
             open.Id, open.SolicitationId, open.Solicitation!.Code,
-            open.Solicitation.Client?.Name, open.StartedAt, acc));
+            open.Solicitation.Client?.Name, open.StartedAt, prior));
     }
 
     [HttpPost("start")]
@@ -48,8 +48,8 @@ public class TimerController : ControllerBase
         _db.WorkIntervals.Add(interval);
         await _db.SaveChangesAsync();
 
-        var acc = await AccumulatedTodayAsync(userId, sol.Id);
-        return Ok(new ActiveTimerDto(interval.Id, sol.Id, sol.Code, sol.Client?.Name, interval.StartedAt, acc));
+        var prior = await PriorSecondsAsync(userId, sol.Id, AppTime.TodayLocal());
+        return Ok(new ActiveTimerDto(interval.Id, sol.Id, sol.Code, sol.Client?.Name, interval.StartedAt, prior));
     }
 
     /// <summary>Pausa: fecha o intervalo aberto (qualquer solicitação).</summary>
@@ -117,9 +117,14 @@ public class TimerController : ControllerBase
             .ToListAsync();
     }
 
-    private async Task<int> AccumulatedTodayAsync(string userId, int solicitationId)
+    /// <summary>Segundos já acumulados hoje nessa solicitação (só intervalos finalizados; o aberto conta ao vivo no cliente).</summary>
+    private async Task<int> PriorSecondsAsync(string userId, int solicitationId, DateOnly workDate)
     {
-        var intervals = await DayIntervalsAsync(userId, solicitationId, AppTime.TodayLocal());
-        return TimeMath.RealMinutes(intervals, DateTime.UtcNow);
+        var intervals = await DayIntervalsAsync(userId, solicitationId, workDate);
+        double seconds = 0;
+        foreach (var i in intervals)
+            if (i.EndedAt is DateTime end)
+                seconds += (end - i.StartedAt).TotalSeconds;
+        return (int)Math.Round(seconds);
     }
 }

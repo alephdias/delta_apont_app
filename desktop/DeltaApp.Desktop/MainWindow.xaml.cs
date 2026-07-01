@@ -5,6 +5,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Interop;
+using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Threading;
 using Microsoft.Win32;
@@ -16,14 +17,11 @@ namespace DeltaApp.Desktop;
 public partial class MainWindow : Window
 {
     private readonly ApiClient _api = new();
+    private readonly TimerHub _timer;
     private readonly DispatcherTimer _ticker = new() { Interval = TimeSpan.FromSeconds(1) };
 
     private List<ClientDto> _clients = new();
     private List<SolicitationDto> _solicitations = new();
-
-    private ActiveTimerDto? _active;
-    private DateTime _activeFetchedAt;
-    private int _lastSolicitationId;
     private TimerWidget? _widget;
 
     private const int HotkeyId = 9000;
@@ -36,10 +34,15 @@ public partial class MainWindow : Window
     public MainWindow()
     {
         InitializeComponent();
+        _timer = new TimerHub(_api);
+        _timer.Changed += OnTimerChanged;
+
         EmailText.Text = Session.Current?.Email ?? "";
         DatePick.SelectedDate = DateTime.Today;
+
         _ticker.Tick += Ticker_Tick;
         _ticker.Start();
+
         Loaded += async (_, _) =>
         {
             await RefreshAllAsync();
@@ -55,21 +58,9 @@ public partial class MainWindow : Window
                 _source.RemoveHook(HwndHook);
             }
         };
-
-        // Ctrl+V cola um print na solicitação selecionada (exceto ao digitar em campos).
-        PreviewKeyDown += async (_, e) =>
-        {
-            if (e.Key == Key.V && Keyboard.Modifiers == ModifierKeys.Control
-                && Keyboard.FocusedElement is not TextBox && Clipboard.ContainsImage())
-            {
-                e.Handled = true;
-                await PastePrintAsync();
-            }
-        };
     }
 
-    private DateOnly SelectedDate =>
-        DateOnly.FromDateTime(DatePick.SelectedDate ?? DateTime.Today);
+    private DateOnly SelectedDate => DateOnly.FromDateTime(DatePick.SelectedDate ?? DateTime.Today);
 
     private async Task RefreshAllAsync()
     {
@@ -80,7 +71,7 @@ public partial class MainWindow : Window
             _solicitations = await _api.GetSolicitationsAsync() ?? new();
             SolGrid.ItemsSource = _solicitations;
             await LoadDayAsync();
-            await RefreshActiveAsync();
+            await _timer.RefreshAsync();
         }
         catch (Exception ex)
         {
@@ -97,54 +88,64 @@ public partial class MainWindow : Window
         DayTotals.Text = $"Real {FormatHelper.Minutes(real)}  ·  Apontado {FormatHelper.Minutes(adj)}";
     }
 
-    private async Task RefreshActiveAsync()
+    // ---------- Cronômetro (via TimerHub, compartilhado com a janelinha) ----------
+    private void OnTimerChanged()
     {
-        _active = await _api.GetActiveAsync();
-        _activeFetchedAt = DateTime.Now;
-        if (_active is not null) _lastSolicitationId = _active.SolicitationId;
         UpdateTimerPanel();
+        UpdateElapsed();
     }
 
     private void UpdateTimerPanel()
     {
-        if (_active is null)
+        if (_timer.IsRunning)
         {
-            RunningCode.Text = "Nenhum cronômetro ativo";
-            ElapsedLabel.Text = "00:00:00";
-            PauseButton.IsEnabled = false;
-            FinishButton.IsEnabled = _lastSolicitationId > 0;
-        }
-        else
-        {
-            var client = string.IsNullOrEmpty(_active.ClientName) ? "" : $"  ·  {_active.ClientName}";
-            RunningCode.Text = $"{_active.Code}{client}";
+            var client = string.IsNullOrEmpty(_timer.Active!.ClientName) ? "" : $"  ·  {_timer.Active.ClientName}";
+            RunningCode.Text = $"{_timer.Active.Code}{client}";
+            RunningCode.Foreground = (Brush)FindResource("GreenDeep");
             PauseButton.IsEnabled = true;
             FinishButton.IsEnabled = true;
         }
+        else if (_timer.HasFrozen)
+        {
+            RunningCode.Text = $"{_timer.LastCode}  ·  pausado";
+            RunningCode.Foreground = (Brush)FindResource("Muted");
+            PauseButton.IsEnabled = false;
+            FinishButton.IsEnabled = true;
+        }
+        else
+        {
+            RunningCode.Text = "Nenhum cronômetro ativo";
+            RunningCode.Foreground = (Brush)FindResource("Muted");
+            PauseButton.IsEnabled = false;
+            FinishButton.IsEnabled = false;
+        }
     }
+
+    private void UpdateElapsed() => ElapsedLabel.Text = FormatHelper.Hms(_timer.ElapsedSeconds());
 
     private async void Ticker_Tick(object? sender, EventArgs e)
     {
-        if (_active is not null)
+        UpdateElapsed();
+        _tickCount++;
+
+        // Re-sincroniza leve com o servidor a cada 60s.
+        if (_tickCount % 60 == 0 && !_autoHandling)
         {
-            var seconds = _active.AccumulatedTodayMinutes * 60 + (DateTime.Now - _activeFetchedAt).TotalSeconds;
-            ElapsedLabel.Text = FormatHelper.Hms(seconds);
+            try { await _timer.RefreshAsync(); } catch { }
         }
 
-        // A cada ~20s, se estiver rodando e o usuário estiver inativo, pausa sozinho.
-        if (++_tickCount % 20 == 0 && _active is not null && !_autoHandling
+        // Auto-pausa por inatividade (10 min).
+        if (_tickCount % 20 == 0 && _timer.IsRunning && !_autoHandling
             && NativeMethods.IdleTime() >= IdleThreshold)
         {
             _autoHandling = true;
             try
             {
-                await _api.PauseAsync();
-                await RefreshActiveAsync();
+                await _timer.PauseAsync();
                 await LoadDayAsync();
-                _widget?.Sync();
                 RunningCode.Text = "⏸ pausado por inatividade";
             }
-            catch { /* silencioso */ }
+            catch { }
             finally { _autoHandling = false; }
         }
     }
@@ -155,7 +156,7 @@ public partial class MainWindow : Window
         var handle = new WindowInteropHelper(this).Handle;
         _source = HwndSource.FromHwnd(handle);
         _source?.AddHook(HwndHook);
-        // Atalho global Ctrl+Alt+P: pausa/continua o cronômetro mesmo sem foco.
+        // Atalho global Ctrl+Alt+P: pausa/continua mesmo sem foco.
         NativeMethods.RegisterHotKey(handle, HotkeyId, NativeMethods.MOD_CONTROL | NativeMethods.MOD_ALT, VkP);
     }
 
@@ -173,24 +174,11 @@ public partial class MainWindow : Window
     {
         try
         {
-            if (_active is not null)
-            {
-                await _api.PauseAsync();
-                await RefreshActiveAsync();
-                await LoadDayAsync();
-            }
-            else if (_lastSolicitationId > 0)
-            {
-                _active = await _api.StartAsync(_lastSolicitationId);
-                _activeFetchedAt = DateTime.Now;
-                UpdateTimerPanel();
-            }
-            _widget?.Sync();
+            if (_timer.IsRunning) await _timer.PauseAsync();
+            else if (_timer.LastSolicitationId > 0) await _timer.StartAsync(_timer.LastSolicitationId);
+            await LoadDayAsync();
         }
-        catch (Exception ex)
-        {
-            MessageBox.Show(this, ex.Message, "Erro");
-        }
+        catch (Exception ex) { MessageBox.Show(this, ex.Message, "Erro"); }
     }
 
     // ---------- Handlers ----------
@@ -233,6 +221,20 @@ public partial class MainWindow : Window
         }
     }
 
+    private void ColarSoPa_Click(object sender, RoutedEventArgs e)
+    {
+        var text = Clipboard.ContainsText() ? Clipboard.GetText() : string.Empty;
+        var m = Regex.Match(text, @"\b(SO|PA)[-\s]?(\d{5,})\b", RegexOptions.IgnoreCase);
+        if (!m.Success)
+        {
+            MessageBox.Show(this, "Não encontrei um número de SO/PA na área de transferência.", "Atenção");
+            return;
+        }
+        TypeCombo.SelectedIndex = m.Groups[1].Value.ToUpperInvariant() == "PA" ? 1 : 0;
+        NumberBox.Text = m.Groups[2].Value;
+        NumberBox.Focus();
+    }
+
     private async void Start_Click(object sender, RoutedEventArgs e)
     {
         if (SolGrid.SelectedItem is not SolicitationDto sol)
@@ -242,48 +244,32 @@ public partial class MainWindow : Window
         }
         try
         {
-            _active = await _api.StartAsync(sol.Id);
-            _activeFetchedAt = DateTime.Now;
-            _lastSolicitationId = sol.Id;
-            UpdateTimerPanel();
-            _widget?.Sync();
+            await _timer.StartAsync(sol.Id);
+            await LoadDayAsync();
         }
-        catch (Exception ex)
-        {
-            MessageBox.Show(this, ex.Message, "Erro", MessageBoxButton.OK, MessageBoxImage.Warning);
-        }
+        catch (Exception ex) { MessageBox.Show(this, ex.Message, "Erro"); }
     }
 
     private async void Pause_Click(object sender, RoutedEventArgs e)
     {
         try
         {
-            await _api.PauseAsync();
-            await RefreshActiveAsync();
+            await _timer.PauseAsync();
             await LoadDayAsync();
-            _widget?.Sync();
         }
-        catch (Exception ex)
-        {
-            MessageBox.Show(this, ex.Message, "Erro");
-        }
+        catch (Exception ex) { MessageBox.Show(this, ex.Message, "Erro"); }
     }
 
     private async void Finish_Click(object sender, RoutedEventArgs e)
     {
-        var id = _active?.SolicitationId ?? _lastSolicitationId;
+        var id = _timer.Active?.SolicitationId ?? _timer.LastSolicitationId;
         if (id <= 0) return;
         try
         {
-            await _api.FinishAsync(id);
-            await RefreshActiveAsync();
+            await _timer.FinishAsync(id);
             await LoadDayAsync();
-            _widget?.Sync();
         }
-        catch (Exception ex)
-        {
-            MessageBox.Show(this, ex.Message, "Erro");
-        }
+        catch (Exception ex) { MessageBox.Show(this, ex.Message, "Erro"); }
     }
 
     private async void AddEvidence_Click(object sender, RoutedEventArgs e)
@@ -299,26 +285,9 @@ public partial class MainWindow : Window
         {
             await _api.AddLinkEvidenceAsync(sol.Id, value, null);
             EvidenceBox.Clear();
-            MessageBox.Show(this, "Evidência adicionada.", "Delta Apont");
+            MessageBox.Show(this, "Evidência adicionada.", "Delta Decisão");
         }
-        catch (Exception ex)
-        {
-            MessageBox.Show(this, ex.Message, "Erro");
-        }
-    }
-
-    private void ColarSoPa_Click(object sender, RoutedEventArgs e)
-    {
-        var text = Clipboard.ContainsText() ? Clipboard.GetText() : string.Empty;
-        var m = Regex.Match(text, @"\b(SO|PA)[-\s]?(\d{5,})\b", RegexOptions.IgnoreCase);
-        if (!m.Success)
-        {
-            MessageBox.Show(this, "Não encontrei um número de SO/PA na área de transferência.", "Atenção");
-            return;
-        }
-        TypeCombo.SelectedIndex = m.Groups[1].Value.ToUpperInvariant() == "PA" ? 1 : 0;
-        NumberBox.Text = m.Groups[2].Value;
-        NumberBox.Focus();
+        catch (Exception ex) { MessageBox.Show(this, ex.Message, "Erro"); }
     }
 
     private async void AttachFile_Click(object sender, RoutedEventArgs e)
@@ -340,10 +309,7 @@ public partial class MainWindow : Window
             await _api.UploadEvidenceAsync(sol.Id, bytes, Path.GetFileName(dlg.FileName), ContentTypeOf(dlg.FileName));
             MessageBox.Show(this, "Arquivo anexado.", "Delta Decisão");
         }
-        catch (Exception ex)
-        {
-            MessageBox.Show(this, ex.Message, "Erro");
-        }
+        catch (Exception ex) { MessageBox.Show(this, ex.Message, "Erro"); }
     }
 
     private async void PastePrint_Click(object sender, RoutedEventArgs e) => await PastePrintAsync();
@@ -372,10 +338,7 @@ public partial class MainWindow : Window
             await _api.UploadEvidenceAsync(sol.Id, ms.ToArray(), name, "image/png", "colado");
             MessageBox.Show(this, "Print anexado.", "Delta Decisão");
         }
-        catch (Exception ex)
-        {
-            MessageBox.Show(this, ex.Message, "Erro");
-        }
+        catch (Exception ex) { MessageBox.Show(this, ex.Message, "Erro"); }
     }
 
     private static string ContentTypeOf(string path) => Path.GetExtension(path).ToLowerInvariant() switch
@@ -392,7 +355,7 @@ public partial class MainWindow : Window
     {
         if (_widget is null || !_widget.IsVisible)
         {
-            _widget = new TimerWidget(_api);
+            _widget = new TimerWidget(_timer);
             _widget.Show();
         }
         else

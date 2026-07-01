@@ -1,32 +1,32 @@
 using System.Windows;
 using System.Windows.Input;
 using System.Windows.Threading;
-using DeltaApp.Desktop.Models;
 using DeltaApp.Desktop.Services;
 
 namespace DeltaApp.Desktop;
 
-/// <summary>Janela flutuante (Topmost) com o cronômetro da solicitação em andamento.</summary>
+/// <summary>Janela flutuante (Topmost) que reflete o mesmo cronômetro da janela principal.</summary>
 public partial class TimerWidget : Window
 {
-    private readonly ApiClient _api;
+    private readonly TimerHub _timer;
     private readonly DispatcherTimer _ticker = new() { Interval = TimeSpan.FromSeconds(1) };
 
-    private ActiveTimerDto? _active;
-    private DateTime _fetchedAt;
-    private int _lastSolicitationId;
-    private string _lastCode = "";
-    private int _tick;
-
-    public TimerWidget(ApiClient api)
+    public TimerWidget(TimerHub timer)
     {
-        _api = api;
+        _timer = timer;
         InitializeComponent();
         PositionBottomRight();
-        _ticker.Tick += Tick;
+
+        _timer.Changed += UpdateDisplay;
+        _ticker.Tick += (_, _) => UpdateDisplay();
         _ticker.Start();
-        Loaded += (_, _) => Sync();
-        Closed += (_, _) => _ticker.Stop();
+
+        Loaded += (_, _) => UpdateDisplay();
+        Closed += (_, _) =>
+        {
+            _ticker.Stop();
+            _timer.Changed -= UpdateDisplay;
+        };
     }
 
     private void PositionBottomRight()
@@ -36,47 +36,22 @@ public partial class TimerWidget : Window
         Top = wa.Bottom - Height - 16;
     }
 
-    /// <summary>Ressincroniza com o servidor (chamado pela MainWindow após ações).</summary>
-    public async void Sync()
-    {
-        try
-        {
-            _active = await _api.GetActiveAsync();
-            _fetchedAt = DateTime.Now;
-            if (_active is not null)
-            {
-                _lastSolicitationId = _active.SolicitationId;
-                _lastCode = _active.Code;
-            }
-            UpdateDisplay();
-        }
-        catch { /* silencioso na janelinha */ }
-    }
-
-    private void Tick(object? sender, EventArgs e)
-    {
-        _tick++;
-        if (_tick % 5 == 0) Sync();
-        UpdateDisplay();
-    }
-
     private void UpdateDisplay()
     {
-        if (_active is not null)
+        TimeText.Text = FormatHelper.Hms(_timer.ElapsedSeconds());
+        if (_timer.IsRunning)
         {
-            CodeText.Text = _active.Code;
-            var seconds = _active.AccumulatedTodayMinutes * 60 + (DateTime.Now - _fetchedAt).TotalSeconds;
-            TimeText.Text = FormatHelper.Hms(seconds);
+            CodeText.Text = _timer.Active!.Code;
             StatusDot.Visibility = Visibility.Visible;
             PauseBtn.IsEnabled = true;
             ContinueBtn.IsEnabled = false;
         }
         else
         {
-            CodeText.Text = _lastSolicitationId > 0 ? _lastCode : "sem SO";
+            CodeText.Text = _timer.LastSolicitationId > 0 ? _timer.LastCode : "sem SO";
             StatusDot.Visibility = Visibility.Collapsed;
             PauseBtn.IsEnabled = false;
-            ContinueBtn.IsEnabled = _lastSolicitationId > 0;
+            ContinueBtn.IsEnabled = _timer.LastSolicitationId > 0;
         }
     }
 
@@ -87,28 +62,20 @@ public partial class TimerWidget : Window
 
     private async void Pause_Click(object sender, RoutedEventArgs e)
     {
-        try { await _api.PauseAsync(); } catch { }
-        Sync();
+        try { await _timer.PauseAsync(); } catch { }
     }
 
     private async void Continue_Click(object sender, RoutedEventArgs e)
     {
-        if (_lastSolicitationId <= 0) return;
-        try
-        {
-            _active = await _api.StartAsync(_lastSolicitationId);
-            _fetchedAt = DateTime.Now;
-            UpdateDisplay();
-        }
-        catch { }
+        if (_timer.LastSolicitationId <= 0) return;
+        try { await _timer.StartAsync(_timer.LastSolicitationId); } catch { }
     }
 
     private async void Finish_Click(object sender, RoutedEventArgs e)
     {
-        var id = _active?.SolicitationId ?? _lastSolicitationId;
+        var id = _timer.Active?.SolicitationId ?? _timer.LastSolicitationId;
         if (id <= 0) return;
-        try { await _api.FinishAsync(id); } catch { }
-        Sync();
+        try { await _timer.FinishAsync(id); } catch { }
     }
 
     private void Close_Click(object sender, RoutedEventArgs e) => Close();

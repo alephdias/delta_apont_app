@@ -26,7 +26,7 @@ public class ActiveTimerDto
     public string Code { get; set; } = "";
     public string? ClientName { get; set; }
     public DateTime StartedAt { get; set; }
-    public int AccumulatedTodayMinutes { get; set; }
+    public int PriorSecondsToday { get; set; }
 }
 
 public class DayEntryDto
