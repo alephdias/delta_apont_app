@@ -1,5 +1,9 @@
+using System.Text;
 using DeltaApp.Api.Data;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -13,13 +17,70 @@ if (!string.IsNullOrEmpty(port))
 // --- Services ---
 builder.Services.AddControllers();
 
-// EF Core + PostgreSQL (Supabase). Connection string vem de appsettings/variaveis de ambiente.
+// EF Core + PostgreSQL (Supabase).
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 
-// Swagger / OpenAPI
+// --- Autenticacao: valida o JWT emitido pelo Supabase Auth ---
+var supabaseUrl = builder.Configuration["Supabase:Url"]?.TrimEnd('/');
+var jwtSecret = builder.Configuration["Supabase:JwtSecret"];
+var issuer = string.IsNullOrEmpty(supabaseUrl) ? null : $"{supabaseUrl}/auth/v1";
+
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
+    {
+        options.RequireHttpsMetadata = true;
+
+        var tvp = new TokenValidationParameters
+        {
+            ValidateIssuer = issuer is not null,
+            ValidIssuer = issuer,
+            ValidateAudience = true,
+            ValidAudience = "authenticated",
+            ValidateLifetime = true,
+            ValidateIssuerSigningKey = true,
+        };
+
+        if (!string.IsNullOrEmpty(jwtSecret))
+        {
+            // Modo legado HS256: JWT secret compartilhado do Supabase (Settings -> API -> JWT Secret).
+            tvp.IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSecret));
+        }
+        else if (issuer is not null)
+        {
+            // Modo assimetrico (chaves de assinatura novas): busca as chaves publicas via discovery.
+            options.Authority = issuer;
+        }
+
+        options.TokenValidationParameters = tvp;
+    });
+
+builder.Services.AddAuthorization();
+
+// Swagger / OpenAPI com suporte a Bearer para testar endpoints autenticados.
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+builder.Services.AddSwaggerGen(c =>
+{
+    c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+    {
+        Name = "Authorization",
+        Type = SecuritySchemeType.Http,
+        Scheme = "bearer",
+        BearerFormat = "JWT",
+        In = ParameterLocation.Header,
+        Description = "Cole o access_token do Supabase (sem o prefixo 'Bearer ')."
+    });
+    c.AddSecurityRequirement(new OpenApiSecurityRequirement
+    {
+        {
+            new OpenApiSecurityScheme
+            {
+                Reference = new OpenApiReference { Type = ReferenceType.SecurityScheme, Id = "Bearer" }
+            },
+            Array.Empty<string>()
+        }
+    });
+});
 
 // CORS: origens vem de config (Cors:AllowedOrigins). Em dev, cai no fallback do Vite.
 const string CorsPolicy = "DeltaAppCors";
@@ -57,6 +118,7 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseCors(CorsPolicy);
+app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
 
