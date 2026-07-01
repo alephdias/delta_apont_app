@@ -36,3 +36,8 @@ appsettings.Production.json
 *.swp
 .DS_Store
 Thumbs.db
+
+# ---------- Ferramentas locais (Claude Code / agents) ----------
+.claude/
+.agents/
+skills-lock.json
