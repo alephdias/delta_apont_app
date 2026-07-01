@@ -55,13 +55,16 @@
                                 <ComboBoxItem Content="SO"/>
                                 <ComboBoxItem Content="PA"/>
                             </ComboBox>
-                            <TextBox x:Name="NumberBox" Width="120" Margin="8,0,0,0" ToolTip="Número (ex.: 26061542)"/>
+                            <TextBox x:Name="NumberBox" Width="120" Margin="8,0,0,0" Tag="Número"
+                                     ToolTip="Número (ex.: 26061542)"/>
                             <Button Content="Colar SO/PA" Style="{StaticResource GhostButton}" Margin="8,0,0,0"
                                     Click="ColarSoPa_Click" ToolTip="Lê SO-###### ou PA-###### da área de transferência"/>
                         </StackPanel>
+                        <TextBlock Text="CLIENTE (OPCIONAL)" Style="{StaticResource Eyebrow}" Margin="0,4,0,4"/>
                         <ComboBox x:Name="ClientCombo" IsEditable="True" Margin="0,0,0,8"
                                   VerticalContentAlignment="Center" ToolTip="Escolha um cliente ou digite um novo"/>
-                        <TextBox x:Name="TitleBox" Margin="0,0,0,12" ToolTip="Título / descrição breve"/>
+                        <TextBox x:Name="TitleBox" Margin="0,0,0,12" Tag="Título / descrição (opcional)"
+                                 ToolTip="Título / descrição breve"/>
                         <Button Content="Criar solicitação" Style="{StaticResource PrimaryButton}"
                                 HorizontalAlignment="Left" Click="Create_Click"/>
                     </StackPanel>
@@ -73,7 +76,7 @@
                                    Margin="18,16,18,8"/>
                         <DataGrid x:Name="SolGrid" Style="{StaticResource CleanGrid}">
                             <DataGrid.Columns>
-                                <DataGridTextColumn Header="Código" Binding="{Binding Code}" Width="120"/>
+                                <DataGridTemplateColumn Header="Código" Width="140" CellTemplate="{StaticResource CodeChip}"/>
                                 <DataGridTextColumn Header="Cliente" Binding="{Binding ClientName}" Width="*"/>
                                 <DataGridTextColumn Header="Título" Binding="{Binding Title}" Width="*"/>
                             </DataGrid.Columns>
@@ -113,7 +116,8 @@
                     <StackPanel>
                         <TextBlock Text="Evidências na solicitação selecionada" Style="{StaticResource CardTitle}"/>
                         <StackPanel Orientation="Horizontal">
-                            <TextBox x:Name="EvidenceBox" Width="180" ToolTip="Cole um link / caminho"/>
+                            <TextBox x:Name="EvidenceBox" Width="180" Tag="Colar um link / caminho"
+                                     ToolTip="Cole um link / caminho"/>
                             <Button Content="Link" Style="{StaticResource PrimaryButton}" Margin="8,0,0,0" Click="AddEvidence_Click"/>
                             <Button Content="Anexar" Style="{StaticResource GhostButton}" Margin="8,0,0,0" Click="AttachFile_Click"/>
                             <Button Content="Colar print" Style="{StaticResource GhostButton}" Margin="8,0,0,0"
@@ -133,10 +137,11 @@
                             </StackPanel>
                         </Grid>
                         <TextBlock x:Name="DayTotals" DockPanel.Dock="Top" Foreground="{StaticResource Muted}"
-                                   FontFamily="{StaticResource Mono}" FontSize="12" Margin="18,0,18,8"/>
+                                   FontFamily="{StaticResource Mono}" FontSize="12" Margin="18,0,18,6"/>
+                        <WrapPanel x:Name="DayMeter" DockPanel.Dock="Top" Margin="18,0,18,12"/>
                         <DataGrid x:Name="DayGrid" Style="{StaticResource CleanGrid}">
                             <DataGrid.Columns>
-                                <DataGridTextColumn Header="Código" Binding="{Binding Code}" Width="110"/>
+                                <DataGridTemplateColumn Header="Código" Width="130" CellTemplate="{StaticResource CodeChip}"/>
                                 <DataGridTextColumn Header="Cliente" Binding="{Binding ClientName}" Width="*"/>
                                 <DataGridTextColumn Header="Início" Binding="{Binding StartText}" Width="66"/>
                                 <DataGridTextColumn Header="Fim" Binding="{Binding EndText}" Width="80"/>

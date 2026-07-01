@@ -35,6 +35,10 @@ public class ApiClient
             throw new InvalidOperationException($"API {(int)resp.StatusCode}: {await resp.Content.ReadAsStringAsync()}");
     }
 
+    // ----- Profile -----
+    public Task<ProfileDto?> GetProfileAsync()
+        => SendAsync<ProfileDto>(Build(HttpMethod.Get, "profile"));
+
     // ----- Clients -----
     public Task<List<ClientDto>?> GetClientsAsync()
         => SendAsync<List<ClientDto>>(Build(HttpMethod.Get, "clients"));

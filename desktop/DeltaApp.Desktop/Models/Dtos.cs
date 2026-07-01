@@ -50,6 +50,7 @@ public class DayEntryDto
     public string AdjustedText => FormatHelper.Minutes(AdjustedMinutes);
     public string StartText => Short(FirstStart);
     public string EndText => IsRunning ? "em curso" : Short(LastEnd);
+    public string Number => Code.Contains('-') ? Code[(Code.IndexOf('-') + 1)..] : Code;
 
     private static string Short(string? t)
         => string.IsNullOrEmpty(t) ? "—" : t[..Math.Min(5, t.Length)];
@@ -62,4 +63,9 @@ public class EvidenceDto
     public string Kind { get; set; } = "";
     public string Value { get; set; } = "";
     public string? Caption { get; set; }
+}
+
+public class ProfileDto
+{
+    public int DailyTargetMinutes { get; set; } = 360;
 }

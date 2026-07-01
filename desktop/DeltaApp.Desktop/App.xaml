@@ -104,11 +104,24 @@
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="TextBox">
-                        <Border Background="{StaticResource Surface}" BorderBrush="{StaticResource Line2}"
+                        <Border x:Name="bd" Background="{StaticResource Surface}" BorderBrush="{StaticResource Line2}"
                                 BorderThickness="1" CornerRadius="7">
-                            <ScrollViewer x:Name="PART_ContentHost" Margin="{TemplateBinding Padding}"
-                                          VerticalAlignment="Center"/>
+                            <Grid>
+                                <TextBlock x:Name="ph" Text="{TemplateBinding Tag}" Foreground="{StaticResource Faint}"
+                                           Margin="10,0,0,0" VerticalAlignment="Center" IsHitTestVisible="False"
+                                           Visibility="Collapsed"/>
+                                <ScrollViewer x:Name="PART_ContentHost" Margin="{TemplateBinding Padding}"
+                                              VerticalAlignment="Center"/>
+                            </Grid>
                         </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="Text" Value="">
+                                <Setter TargetName="ph" Property="Visibility" Value="Visible"/>
+                            </Trigger>
+                            <Trigger Property="IsKeyboardFocused" Value="True">
+                                <Setter TargetName="bd" Property="BorderBrush" Value="{StaticResource Ink}"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
                     </ControlTemplate>
                 </Setter.Value>
             </Setter>
@@ -143,6 +156,40 @@
             <Setter Property="BorderThickness" Value="0,0,0,1"/>
             <Setter Property="HorizontalContentAlignment" Value="Left"/>
         </Style>
+        <!-- Chip SO/PA + número para as tabelas -->
+        <DataTemplate x:Key="CodeChip">
+            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                <Border CornerRadius="3" Padding="4,1" Margin="0,0,6,0" VerticalAlignment="Center">
+                    <Border.Style>
+                        <Style TargetType="Border">
+                            <Setter Property="Background" Value="{StaticResource Ink}"/>
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding Type}" Value="PA">
+                                    <Setter Property="Background" Value="Transparent"/>
+                                    <Setter Property="BorderBrush" Value="{StaticResource Ink}"/>
+                                    <Setter Property="BorderThickness" Value="1"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Border.Style>
+                    <TextBlock Text="{Binding Type}" FontFamily="{StaticResource Mono}" FontSize="9" FontWeight="Bold">
+                        <TextBlock.Style>
+                            <Style TargetType="TextBlock">
+                                <Setter Property="Foreground" Value="White"/>
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding Type}" Value="PA">
+                                        <Setter Property="Foreground" Value="{StaticResource Ink}"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </TextBlock.Style>
+                    </TextBlock>
+                </Border>
+                <TextBlock Text="{Binding Number}" FontFamily="{StaticResource Mono}" FontSize="12.5"
+                           VerticalAlignment="Center"/>
+            </StackPanel>
+        </DataTemplate>
+
         <Style x:Key="CleanGrid" TargetType="DataGrid">
             <Setter Property="AutoGenerateColumns" Value="False"/>
             <Setter Property="IsReadOnly" Value="True"/>

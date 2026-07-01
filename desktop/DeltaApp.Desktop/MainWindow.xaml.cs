@@ -23,6 +23,7 @@ public partial class MainWindow : Window
     private List<ClientDto> _clients = new();
     private List<SolicitationDto> _solicitations = new();
     private TimerWidget? _widget;
+    private int _targetMinutes = 360;
 
     private const int HotkeyId = 9000;
     private const uint VkP = 0x50; // tecla P
@@ -66,6 +67,9 @@ public partial class MainWindow : Window
     {
         try
         {
+            var profile = await _api.GetProfileAsync();
+            if (profile is not null) _targetMinutes = profile.DailyTargetMinutes;
+
             _clients = await _api.GetClientsAsync() ?? new();
             ClientCombo.ItemsSource = _clients;
             _solicitations = await _api.GetSolicitationsAsync() ?? new();
@@ -85,7 +89,50 @@ public partial class MainWindow : Window
         DayGrid.ItemsSource = entries;
         var real = entries.Sum(e => e.RealMinutes);
         var adj = entries.Sum(e => e.AdjustedMinutes);
-        DayTotals.Text = $"Real {FormatHelper.Minutes(real)}  ·  Apontado {FormatHelper.Minutes(adj)}";
+        var falta = Math.Max(0, _targetMinutes - adj);
+        DayTotals.Text = $"Real {FormatHelper.Minutes(real)}   ·   Apontado {FormatHelper.Minutes(adj)}   ·   "
+                         + (falta > 0 ? $"Falta {FormatHelper.Minutes(falta)} p/ meta ({FormatHelper.Minutes(_targetMinutes)})" : "meta batida ✓");
+        RenderMeter(adj, _targetMinutes);
+    }
+
+    /// <summary>Medidor de quartos de hora: cada tick = 15 min, verde até o apontado, marca da meta.</summary>
+    private void RenderMeter(int adjustedMinutes, int targetMinutes)
+    {
+        DayMeter.Children.Clear();
+        var target = Math.Max(15, targetMinutes);
+        var filled = Math.Max(0, adjustedMinutes / 15);
+        var targetTicks = target / 15;
+        var total = Math.Max(targetTicks, filled);
+        var green = (Brush)FindResource("Green");
+        var greenDeep = (Brush)FindResource("GreenDeep");
+        var line = (Brush)FindResource("Line2");
+        var ink = (Brush)FindResource("Ink");
+
+        for (var i = 0; i < total; i++)
+        {
+            var tick = new Border
+            {
+                Width = 9,
+                Height = 22,
+                CornerRadius = new CornerRadius(2),
+                Margin = new Thickness(0, 0, 3, 0),
+                Background = i < filled ? (i >= targetTicks ? greenDeep : green) : line
+            };
+            DayMeter.Children.Add(tick);
+
+            // marca da meta (linha de tinta após o último tick da meta)
+            if (i == targetTicks - 1)
+            {
+                DayMeter.Children.Add(new Border
+                {
+                    Width = 2,
+                    Height = 26,
+                    Background = ink,
+                    Margin = new Thickness(0, 0, 4, 0),
+                    CornerRadius = new CornerRadius(1)
+                });
+            }
+        }
     }
 
     // ---------- Cronômetro (via TimerHub, compartilhado com a janelinha) ----------
