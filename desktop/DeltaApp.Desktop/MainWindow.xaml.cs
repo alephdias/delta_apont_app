@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.IO;
 using System.Text.RegularExpressions;
 using System.Windows;
@@ -39,7 +40,11 @@ public partial class MainWindow : Window
         DatePick.SelectedDate = DateTime.Today;
         _ticker.Tick += Ticker_Tick;
         _ticker.Start();
-        Loaded += async (_, _) => await RefreshAllAsync();
+        Loaded += async (_, _) =>
+        {
+            await RefreshAllAsync();
+            await CheckUpdateAsync();
+        };
         Closed += (_, _) =>
         {
             _ticker.Stop();
@@ -402,5 +407,19 @@ public partial class MainWindow : Window
         SessionStore.Clear();
         new LoginWindow().Show();
         Close();
+    }
+
+    private async Task CheckUpdateAsync()
+    {
+        var (available, tag, url) = await UpdateService.CheckAsync();
+        if (!available) return;
+        var r = MessageBox.Show(this,
+            $"Uma nova versão ({tag}) do aplicativo está disponível.\n\nBaixar agora?",
+            "Atualização disponível", MessageBoxButton.YesNo, MessageBoxImage.Information);
+        if (r == MessageBoxResult.Yes)
+        {
+            try { Process.Start(new ProcessStartInfo(url) { UseShellExecute = true }); }
+            catch { /* ignora */ }
+        }
     }
 }
