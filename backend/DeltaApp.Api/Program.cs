@@ -1,4 +1,5 @@
 using System.Text;
+using System.Text.Json.Serialization;
 using DeltaApp.Api.Data;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
@@ -15,7 +16,9 @@ if (!string.IsNullOrEmpty(port))
 }
 
 // --- Services ---
-builder.Services.AddControllers();
+// JsonStringEnumConverter: aceita/serializa enums como texto ("SO"/"PA", "Link"/"File").
+builder.Services.AddControllers()
+    .AddJsonOptions(o => o.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter()));
 
 // EF Core + PostgreSQL (Supabase).
 builder.Services.AddDbContext<AppDbContext>(options =>
