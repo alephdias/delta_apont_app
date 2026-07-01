@@ -91,9 +91,25 @@ export const ClientsApi = {
   remove: (id: number) => api.delete(`/clients/${id}`),
 };
 
+export interface UpdateSolicitationBody {
+  clientId?: number | null;
+  clientName?: string | null;
+  title?: string | null;
+  description?: string | null;
+  isArchived: boolean;
+}
+
 export const SolicitationsApi = {
-  list: (params?: { date?: string; clientId?: number }) =>
-    api.get<Solicitation[]>("/solicitations", { params }).then((r) => r.data),
+  list: (params?: {
+    q?: string;
+    clientId?: number;
+    type?: "SO" | "PA";
+    date?: string;
+    includeArchived?: boolean;
+  }) => api.get<Solicitation[]>("/solicitations", { params }).then((r) => r.data),
+  update: (id: number, body: UpdateSolicitationBody) =>
+    api.put<Solicitation>(`/solicitations/${id}`, body).then((r) => r.data),
+  remove: (id: number) => api.delete(`/solicitations/${id}`),
 };
 
 export const DayEntriesApi = {
@@ -111,4 +127,6 @@ export const DayEntriesApi = {
 
 export const ProfileApi = {
   get: () => api.get<Profile>("/profile").then((r) => r.data),
+  update: (body: { displayName?: string | null; dailyTargetMinutes: number }) =>
+    api.put<Profile>("/profile", body).then((r) => r.data),
 };

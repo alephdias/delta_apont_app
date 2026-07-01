@@ -18,11 +18,15 @@ export function AppLayout() {
             Meu dia
           </NavLink>
           <NavLink to="/fechamento">Fechamento</NavLink>
+          <NavLink to="/solicitacoes">Solicitações</NavLink>
           <NavLink to="/empresas">Empresas</NavLink>
           <NavLink to="/aplicativo">Aplicativo</NavLink>
         </nav>
         <div className="topbar-end">
           <span className="topbar-user">{email}</span>
+          <NavLink to="/configuracoes" className="icon-link" title="Configurações" aria-label="Configurações">
+            ⚙
+          </NavLink>
           <ThemeToggle />
           <button className="btn btn-ghost btn-sm" onClick={() => signOut()}>
             Sair

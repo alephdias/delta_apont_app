@@ -901,6 +901,143 @@ input {
   gap: 0.4rem;
 }
 
+/* ---------- Solicitações (gerenciar) ---------- */
+.check {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.82rem;
+  color: var(--muted);
+  cursor: pointer;
+}
+.icon-link {
+  text-decoration: none;
+  color: var(--muted);
+  font-size: 1.05rem;
+  width: 30px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  border-radius: 8px;
+}
+.icon-link:hover,
+.icon-link.active {
+  color: var(--text);
+  background: var(--surface-2);
+}
+.sol-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 1rem;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 0.85rem 1.1rem;
+}
+.sol-row.archived {
+  opacity: 0.6;
+}
+.sol-main {
+  min-width: 0;
+}
+.sol-head {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.arch-tag {
+  font-family: var(--mono);
+  font-size: 0.64rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+  border: 1px solid var(--line-2);
+  border-radius: 4px;
+  padding: 0.05rem 0.32rem;
+}
+.sol-edit {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.55rem;
+  flex-wrap: wrap;
+}
+.sol-edit .input {
+  max-width: 240px;
+}
+
+/* ---------- Configurações ---------- */
+.config-card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 1.4rem 1.5rem;
+  margin-bottom: 1.1rem;
+}
+.config-title {
+  font-family: var(--display);
+  font-size: 1.05rem;
+  margin: 0 0 0.3rem;
+}
+.config-hint {
+  color: var(--muted);
+  font-size: 0.86rem;
+  margin: 0 0 1rem;
+}
+.preset-row {
+  display: flex;
+  gap: 0.7rem;
+  flex-wrap: wrap;
+  align-items: stretch;
+}
+.preset {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  align-items: flex-start;
+  border: 1px solid var(--line-2);
+  border-radius: var(--radius-sm);
+  padding: 0.7rem 0.95rem;
+  background: var(--surface);
+  cursor: pointer;
+  min-width: 120px;
+}
+.preset.on {
+  border-color: var(--text);
+  box-shadow: 0 0 0 1px var(--text);
+}
+.preset-h {
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: 1.3rem;
+}
+.preset-l {
+  font-family: var(--mono);
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+}
+.preset-custom {
+  cursor: default;
+}
+.preset-custom .input {
+  width: 96px;
+  margin-top: 0.25rem;
+}
+.config-current {
+  margin-top: 1rem;
+  font-family: var(--mono);
+  font-size: 0.85rem;
+  color: var(--text-2);
+}
+.config-save {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-top: 0.5rem;
+}
+
 /* ============================================================
    Aplicativo (download + guia)
    ============================================================ */

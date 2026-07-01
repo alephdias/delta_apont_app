@@ -92,6 +92,23 @@ public class SolicitationsController : ControllerBase
         return Map(s);
     }
 
+    [HttpDelete("{id:int}")]
+    public async Task<IActionResult> Delete(int id)
+    {
+        var userId = User.GetUserId();
+        var s = await _db.Solicitations.FirstOrDefaultAsync(x => x.Id == id && x.UserId == userId);
+        if (s is null) return NotFound();
+
+        var hasTime = await _db.WorkIntervals.AnyAsync(i => i.SolicitationId == id)
+                      || await _db.DayEntries.AnyAsync(d => d.SolicitationId == id);
+        if (hasTime)
+            return Conflict("Esta solicitação tem tempo lançado. Arquive-a em vez de excluir.");
+
+        _db.Solicitations.Remove(s);
+        await _db.SaveChangesAsync();
+        return NoContent();
+    }
+
     private async Task<int?> ResolveClientIdAsync(string userId, int? clientId, string? clientName)
     {
         if (clientId is int id)
