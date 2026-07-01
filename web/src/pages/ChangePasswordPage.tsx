@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../auth/AuthContext";
+import { APP_NAME, Logo } from "../components/Brand";
 
 export function ChangePasswordPage() {
   const { updatePassword, signOut } = useAuth();
@@ -36,8 +37,8 @@ export function ChangePasswordPage() {
     <div className="auth">
       <form className="auth-card" onSubmit={onSubmit}>
         <div className="auth-head">
-          <span className="delta-mark">Δ</span>
-          <h1>Delta Apont</h1>
+          <Logo />
+          <h1>{APP_NAME}</h1>
         </div>
         <p className="eyebrow">Primeiro acesso</p>
         <h2 className="auth-title">Defina sua senha</h2>

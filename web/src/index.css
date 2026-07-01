@@ -1,28 +1,65 @@
 /* ============================================================
    Delta Apont — direção "Cronômetro"
-   Instrumento de precisão: grafite/tinta monocromático, uma
-   única cor funcional (verde) reservada ao progresso da meta,
-   numerais em mono como protagonista.
+   Tokens semânticos → suportam tema claro e escuro.
    ============================================================ */
 
-:root {
-  --ink: #181c22;
-  --graphite: #414b57;
-  --muted: #79838f;
-  --faint: #a7afb9;
-  --paper: #eceef1;
+:root,
+[data-theme="light"] {
+  --bg: #eceef1;
   --surface: #ffffff;
+  --surface-2: #f3f5f7;
   --line: #dbe0e6;
   --line-2: #c7cfd8;
+
+  --text: #181c22;
+  --text-2: #414b57;
+  --muted: #79838f;
+  --faint: #a7afb9;
+
+  --brand: #181c22;
+  --on-brand: #ffffff;
+  --brand-hover: #000000;
+
   --green: #0fa671;
   --green-deep: #0b7d55;
   --green-soft: #e4f3ec;
   --danger: #ce4a48;
 
+  --topbar-bg: rgba(236, 238, 241, 0.82);
+  --focus-ring: rgba(24, 28, 34, 0.08);
+  --shadow: 0 24px 48px -28px rgba(24, 28, 34, 0.35);
+}
+
+[data-theme="dark"] {
+  --bg: #14171c;
+  --surface: #1b1f26;
+  --surface-2: #232830;
+  --line: #2b323b;
+  --line-2: #3a424d;
+
+  --text: #e7eaef;
+  --text-2: #b2bac5;
+  --muted: #828d9a;
+  --faint: #5c6672;
+
+  --brand: #e7eaef;
+  --on-brand: #14171c;
+  --brand-hover: #ffffff;
+
+  --green: #1fbe86;
+  --green-deep: #56d6a0;
+  --green-soft: #16362a;
+  --danger: #f1706e;
+
+  --topbar-bg: rgba(20, 23, 28, 0.8);
+  --focus-ring: rgba(231, 234, 239, 0.14);
+  --shadow: 0 24px 48px -24px rgba(0, 0, 0, 0.6);
+}
+
+:root {
   --display: "Bricolage Grotesque", "Hanken Grotesk", system-ui, sans-serif;
   --sans: "Hanken Grotesk", system-ui, -apple-system, sans-serif;
   --mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
-
   --radius: 12px;
   --radius-sm: 8px;
 }
@@ -30,20 +67,19 @@
 * {
   box-sizing: border-box;
 }
-
 html,
 body {
   margin: 0;
 }
-
 body {
   min-height: 100vh;
-  background: var(--paper);
-  color: var(--ink);
+  background: var(--bg);
+  color: var(--text);
   font-family: var(--sans);
   font-size: 15px;
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
+  transition: background-color 0.2s ease, color 0.2s ease;
 }
 
 h1,
@@ -53,9 +89,8 @@ h3 {
   font-family: var(--display);
   font-weight: 700;
   letter-spacing: -0.02em;
-  color: var(--ink);
+  color: var(--text);
 }
-
 button,
 input {
   font-family: inherit;
@@ -64,13 +99,10 @@ input {
 .mono {
   font-family: var(--mono);
   font-variant-numeric: tabular-nums;
-  font-feature-settings: "tnum";
 }
-
 .muted {
   color: var(--muted);
 }
-
 .eyebrow {
   font-family: var(--mono);
   font-size: 0.68rem;
@@ -79,7 +111,6 @@ input {
   text-transform: uppercase;
   color: var(--muted);
 }
-
 .center-screen {
   min-height: 100vh;
   display: grid;
@@ -95,8 +126,8 @@ input {
   place-items: center;
   width: 32px;
   height: 32px;
-  background: var(--ink);
-  color: #fff;
+  background: var(--brand);
+  color: var(--on-brand);
   border-radius: 9px;
   font-family: var(--display);
   font-weight: 800;
@@ -113,7 +144,8 @@ input {
   border-radius: var(--radius-sm);
   padding: 0.55rem 0.95rem;
   cursor: pointer;
-  transition: transform 0.06s ease, background 0.15s ease, border-color 0.15s ease;
+  transition: transform 0.06s ease, background 0.15s ease, border-color 0.15s ease,
+    color 0.15s ease;
 }
 .btn:active {
   transform: translateY(1px);
@@ -123,20 +155,28 @@ input {
   cursor: not-allowed;
 }
 .btn-ink {
-  background: var(--ink);
-  color: #fff;
+  background: var(--brand);
+  color: var(--on-brand);
 }
 .btn-ink:not(:disabled):hover {
-  background: #000;
+  background: var(--brand-hover);
 }
 .btn-ghost {
   background: transparent;
-  color: var(--graphite);
+  color: var(--text-2);
   border-color: var(--line-2);
 }
 .btn-ghost:hover {
-  border-color: var(--ink);
-  color: var(--ink);
+  border-color: var(--text);
+  color: var(--text);
+}
+.btn-danger {
+  background: transparent;
+  color: var(--danger);
+  border-color: color-mix(in srgb, var(--danger) 45%, transparent);
+}
+.btn-danger:hover {
+  background: color-mix(in srgb, var(--danger) 12%, transparent);
 }
 .btn-block {
   width: 100%;
@@ -165,20 +205,19 @@ input {
   border: 1px solid var(--line-2);
   border-radius: var(--radius-sm);
   background: var(--surface);
-  color: var(--ink);
+  color: var(--text);
   font-size: 0.95rem;
   transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 .input:focus {
   outline: none;
-  border-color: var(--ink);
-  box-shadow: 0 0 0 3px rgba(24, 28, 34, 0.08);
+  border-color: var(--text);
+  box-shadow: 0 0 0 3px var(--focus-ring);
 }
-
 .alert-error {
-  background: #fdecec;
+  background: color-mix(in srgb, var(--danger) 12%, var(--surface));
   color: var(--danger);
-  border: 1px solid #f4c9c8;
+  border: 1px solid color-mix(in srgb, var(--danger) 35%, var(--surface));
   border-radius: var(--radius-sm);
   padding: 0.55rem 0.7rem;
   font-size: 0.85rem;
@@ -190,22 +229,16 @@ input {
 .auth {
   min-height: 100vh;
   display: grid;
-  grid-template-columns: 1fr;
   place-items: center;
   padding: 1.5rem;
   position: relative;
   overflow: hidden;
 }
-/* faixa de ticks de fundo — o motivo do quarto de hora */
 .auth::before {
   content: "";
   position: absolute;
   inset: 0;
-  background-image: repeating-linear-gradient(
-    90deg,
-    var(--line) 0 1px,
-    transparent 1px 26px
-  );
+  background-image: repeating-linear-gradient(90deg, var(--line) 0 1px, transparent 1px 26px);
   opacity: 0.5;
   mask-image: linear-gradient(180deg, transparent, #000 40%, transparent);
   pointer-events: none;
@@ -218,7 +251,7 @@ input {
   border: 1px solid var(--line);
   border-radius: 16px;
   padding: 2.2rem 2rem;
-  box-shadow: 0 24px 48px -28px rgba(24, 28, 34, 0.35);
+  box-shadow: var(--shadow);
 }
 .auth-head {
   display: flex;
@@ -262,7 +295,7 @@ input {
   align-items: center;
   gap: 1.75rem;
   padding: 0.85rem 1.75rem;
-  background: rgba(236, 238, 241, 0.82);
+  background: var(--topbar-bg);
   backdrop-filter: saturate(140%) blur(10px);
   border-bottom: 1px solid var(--line);
 }
@@ -275,7 +308,6 @@ input {
   font-family: var(--display);
   font-weight: 700;
   font-size: 1rem;
-  letter-spacing: -0.01em;
 }
 .nav {
   display: flex;
@@ -287,17 +319,16 @@ input {
   color: var(--muted);
   font-size: 0.82rem;
   font-weight: 600;
-  letter-spacing: 0.02em;
   padding: 0.35rem 0;
   text-transform: uppercase;
   font-family: var(--mono);
   letter-spacing: 0.08em;
 }
 .nav a:hover {
-  color: var(--ink);
+  color: var(--text);
 }
 .nav a.active {
-  color: var(--ink);
+  color: var(--text);
 }
 .nav a.active::after {
   content: "";
@@ -306,7 +337,7 @@ input {
   right: 0;
   bottom: -0.85rem;
   height: 2px;
-  background: var(--ink);
+  background: var(--text);
 }
 .topbar-end {
   margin-left: auto;
@@ -318,6 +349,35 @@ input {
   font-family: var(--mono);
   font-size: 0.78rem;
   color: var(--muted);
+}
+
+/* theme toggle */
+.theme-toggle {
+  display: inline-flex;
+  border: 1px solid var(--line-2);
+  border-radius: 8px;
+  overflow: hidden;
+}
+.theme-toggle button {
+  width: 30px;
+  height: 30px;
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  font-size: 0.85rem;
+}
+.theme-toggle button + button {
+  border-left: 1px solid var(--line);
+}
+.theme-toggle button:hover:not(.on) {
+  color: var(--text);
+}
+.theme-toggle button.on {
+  background: var(--brand);
+  color: var(--on-brand);
 }
 
 .main {
@@ -352,7 +412,7 @@ input {
   border: 1px solid var(--line-2);
   border-radius: var(--radius-sm);
   background: var(--surface);
-  color: var(--ink);
+  color: var(--text);
   font-family: var(--mono);
   font-size: 0.85rem;
 }
@@ -364,13 +424,13 @@ input {
   border: 1px solid var(--line-2);
   border-radius: var(--radius-sm);
   background: var(--surface);
-  color: var(--graphite);
+  color: var(--text-2);
   cursor: pointer;
   font-size: 0.9rem;
 }
 .icon-btn:hover {
-  border-color: var(--ink);
-  color: var(--ink);
+  border-color: var(--text);
+  color: var(--text);
 }
 
 /* ============================================================
@@ -410,9 +470,8 @@ input {
 .gauge-target {
   font-family: var(--mono);
   font-size: 0.95rem;
-  color: var(--ink);
+  color: var(--text);
 }
-
 .meter {
   display: flex;
   align-items: flex-end;
@@ -443,7 +502,7 @@ input {
   top: -5px;
   bottom: -5px;
   width: 2px;
-  background: var(--ink);
+  background: var(--text);
   border-radius: 2px;
 }
 .meter-sm {
@@ -463,7 +522,6 @@ input {
   bottom: -3px;
   width: 1.5px;
 }
-
 .gauge-legend {
   display: flex;
   gap: 1.4rem;
@@ -473,14 +531,13 @@ input {
   color: var(--muted);
 }
 .gauge-legend b {
-  color: var(--ink);
+  color: var(--text);
   font-weight: 500;
 }
 .delta-chip {
   color: var(--green-deep);
   font-weight: 500;
 }
-
 @keyframes tickRise {
   from {
     transform: scaleY(0.15);
@@ -528,7 +585,6 @@ input {
   border-color: var(--green);
   box-shadow: 0 0 0 1px var(--green);
 }
-
 .r-id {
   min-width: 0;
 }
@@ -546,13 +602,13 @@ input {
   border-radius: 4px;
 }
 .chip-so {
-  background: var(--ink);
-  color: #fff;
+  background: var(--brand);
+  color: var(--on-brand);
 }
 .chip-pa {
   background: transparent;
-  color: var(--ink);
-  border: 1px solid var(--ink);
+  color: var(--text);
+  border: 1px solid var(--text);
 }
 .code {
   font-family: var(--mono);
@@ -584,7 +640,6 @@ input {
     opacity: 0.3;
   }
 }
-
 .r-time {
   font-family: var(--mono);
   font-size: 0.9rem;
@@ -600,7 +655,6 @@ input {
   color: var(--muted);
   margin-top: 0.2rem;
 }
-
 .stepper {
   display: inline-flex;
   align-items: center;
@@ -614,13 +668,13 @@ input {
   height: 32px;
   border: 0;
   background: transparent;
-  color: var(--graphite);
+  color: var(--text-2);
   font-size: 1.1rem;
   cursor: pointer;
 }
 .stepper button:hover {
-  background: var(--paper);
-  color: var(--ink);
+  background: var(--surface-2);
+  color: var(--text);
 }
 .stepper .val {
   min-width: 58px;
@@ -649,9 +703,8 @@ input {
 }
 .delta-badge.zero {
   color: var(--muted);
-  background: var(--paper);
+  background: var(--surface-2);
 }
-
 .r-save {
   min-width: 62px;
   text-align: right;
@@ -672,7 +725,7 @@ input {
   border: 0;
   background: transparent;
   font-size: 0.85rem;
-  color: var(--graphite);
+  color: var(--text-2);
   padding: 0.15rem 0;
 }
 .notes-input:focus {
@@ -682,7 +735,6 @@ input {
   color: var(--faint);
 }
 
-/* ---------- Empty / loading ---------- */
 .placeholder {
   background: var(--surface);
   border: 1px dashed var(--line-2);
@@ -733,6 +785,52 @@ input {
 }
 .md-value .pct {
   color: var(--muted);
+}
+
+/* ============================================================
+   Empresas
+   ============================================================ */
+.company-add {
+  display: flex;
+  gap: 0.6rem;
+  margin-bottom: 1.25rem;
+}
+.company-add .input {
+  flex: 1;
+}
+.company-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 1rem;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 0.85rem 1.1rem;
+}
+.company-name {
+  font-weight: 600;
+  font-size: 0.98rem;
+}
+.company-name-input {
+  font-size: 0.98rem;
+  font-weight: 600;
+  padding: 0.35rem 0.5rem;
+  border: 1px solid var(--text);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--text);
+  width: 100%;
+}
+.company-meta {
+  font-family: var(--mono);
+  font-size: 0.74rem;
+  color: var(--muted);
+  white-space: nowrap;
+}
+.company-actions {
+  display: flex;
+  gap: 0.4rem;
 }
 
 /* ============================================================
@@ -792,10 +890,11 @@ input {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .meter-animate .tick {
-    animation: none;
-  }
+  .meter-animate .tick,
   .running-dot {
     animation: none;
+  }
+  body {
+    transition: none;
   }
 }

@@ -27,6 +27,7 @@ export interface ClientItem {
   id: number;
   name: string;
   createdAt: string;
+  solicitationCount: number;
 }
 
 export interface Solicitation {
@@ -83,6 +84,11 @@ export interface Profile {
 // ----- Endpoints -----
 export const ClientsApi = {
   list: () => api.get<ClientItem[]>("/clients").then((r) => r.data),
+  create: (name: string) =>
+    api.post<ClientItem>("/clients", { name }).then((r) => r.data),
+  update: (id: number, name: string) =>
+    api.put<ClientItem>(`/clients/${id}`, { name }).then((r) => r.data),
+  remove: (id: number) => api.delete(`/clients/${id}`),
 };
 
 export const SolicitationsApi = {

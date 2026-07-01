@@ -11,7 +11,20 @@
       href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700;12..96,800&family=Hanken+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap"
       rel="stylesheet"
     />
-    <title>Delta Apont — apontamentos</title>
+    <title>Delta Decisão — apontamentos</title>
+    <script>
+      // Evita flash de tema: aplica o tema salvo antes do app montar.
+      (function () {
+        try {
+          var t = localStorage.getItem("delta-theme") || "system";
+          var dark =
+            t === "dark" ||
+            (t === "system" &&
+              window.matchMedia("(prefers-color-scheme: dark)").matches);
+          document.documentElement.dataset.theme = dark ? "dark" : "light";
+        } catch (e) {}
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>
