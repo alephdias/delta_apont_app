@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../auth/AuthContext";
-import { APP_NAME, Logo } from "../components/Brand";
+import { Logo } from "../components/Brand";
 
 export function LoginPage() {
   const { signIn, session } = useAuth();
@@ -33,8 +33,7 @@ export function LoginPage() {
     <div className="auth">
       <form className="auth-card" onSubmit={onSubmit}>
         <div className="auth-head">
-          <Logo />
-          <h1>{APP_NAME}</h1>
+          <Logo size="lg" />
         </div>
         <p className="eyebrow">Controle de apontamentos</p>
         <p className="auth-sub">Entre com sua conta da empresa.</p>

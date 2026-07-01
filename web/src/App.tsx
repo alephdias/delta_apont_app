@@ -6,6 +6,7 @@ import { ChangePasswordPage } from "./pages/ChangePasswordPage";
 import { DayViewPage } from "./pages/DayViewPage";
 import { MonthClosePage } from "./pages/MonthClosePage";
 import { EmpresasPage } from "./pages/EmpresasPage";
+import { AplicativoPage } from "./pages/AplicativoPage";
 
 export default function App() {
   return (
@@ -29,6 +30,7 @@ export default function App() {
         <Route path="/" element={<DayViewPage />} />
         <Route path="/fechamento" element={<MonthClosePage />} />
         <Route path="/empresas" element={<EmpresasPage />} />
+        <Route path="/aplicativo" element={<AplicativoPage />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

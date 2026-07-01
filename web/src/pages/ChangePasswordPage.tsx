@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../auth/AuthContext";
-import { APP_NAME, Logo } from "../components/Brand";
+import { Logo } from "../components/Brand";
 
 export function ChangePasswordPage() {
   const { updatePassword, signOut } = useAuth();
@@ -37,8 +37,7 @@ export function ChangePasswordPage() {
     <div className="auth">
       <form className="auth-card" onSubmit={onSubmit}>
         <div className="auth-head">
-          <Logo />
-          <h1>{APP_NAME}</h1>
+          <Logo size="lg" />
         </div>
         <p className="eyebrow">Primeiro acesso</p>
         <h2 className="auth-title">Defina sua senha</h2>

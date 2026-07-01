@@ -1,12 +1,13 @@
-/** Nome e marca centralizados — troque aqui quando a logo definitiva chegar. */
+/** Nome e marca centralizados. A logo é branca (para fundo escuro);
+ *  no tema claro ela é escurecida via filtro CSS (.brand-logo). */
 export const APP_NAME = "Delta Decisão";
 
-export function Logo() {
-  // Quando houver arquivo de logo em /public, troque por:
-  // return <img src="/logo.svg" alt="Delta Decisão" className="brand-logo" />;
+export function Logo({ size = "sm" }: { size?: "sm" | "lg" }) {
   return (
-    <span className="delta-mark" aria-hidden="true">
-      Δ
-    </span>
+    <img
+      src="/logo.png"
+      alt={APP_NAME}
+      className={size === "lg" ? "brand-logo brand-logo-lg" : "brand-logo"}
+    />
   );
 }
