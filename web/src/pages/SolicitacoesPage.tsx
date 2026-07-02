@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ClientsApi, SolicitationsApi } from "../api/client";
-import type { ClientItem, Solicitation } from "../api/client";
+import type { ClientItem, Solicitation, SolStatus } from "../api/client";
 import { EvidencePanel } from "../components/EvidencePanel";
 
 function messageOf(e: unknown): string {
@@ -10,6 +10,12 @@ function messageOf(e: unknown): string {
 }
 
 type TypeFilter = "" | "SO" | "PA";
+
+const STATUS_LABEL: Record<SolStatus, string> = {
+  Aberta: "Aberta",
+  EmAndamento: "Em andamento",
+  Resolvida: "Resolvida",
+};
 
 export function SolicitacoesPage() {
   const { data: all, isLoading } = useQuery({
@@ -20,13 +26,18 @@ export function SolicitacoesPage() {
 
   const [q, setQ] = useState("");
   const [type, setType] = useState<TypeFilter>("");
+  const [status, setStatus] = useState<"" | SolStatus>("");
+  const [tag, setTag] = useState("");
   const [showArchived, setShowArchived] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const term = q.trim().toLowerCase();
+  const tagTerm = tag.trim().toLowerCase();
   const list = (all ?? []).filter((s) => {
     if (!showArchived && s.isArchived) return false;
     if (type && s.type !== type) return false;
+    if (status && s.status !== status) return false;
+    if (tagTerm && !(s.tags ?? "").toLowerCase().includes(tagTerm)) return false;
     if (
       term &&
       !s.number.toLowerCase().includes(term) &&
@@ -50,8 +61,8 @@ export function SolicitacoesPage() {
         <div className="filters">
           <input
             className="input"
-            style={{ width: 260 }}
-            placeholder="Buscar por número, título ou empresa…"
+            style={{ width: 230 }}
+            placeholder="Buscar número, título ou empresa…"
             value={q}
             onChange={(e) => setQ(e.target.value)}
           />
@@ -62,14 +73,28 @@ export function SolicitacoesPage() {
               </button>
             ))}
           </div>
+          <select
+            className="select"
+            value={status}
+            onChange={(e) => setStatus(e.target.value as "" | SolStatus)}
+            aria-label="Status"
+          >
+            <option value="">Todos status</option>
+            <option value="Aberta">Aberta</option>
+            <option value="EmAndamento">Em andamento</option>
+            <option value="Resolvida">Resolvida</option>
+          </select>
+          <input
+            className="input"
+            style={{ width: 140 }}
+            placeholder="etiqueta…"
+            value={tag}
+            onChange={(e) => setTag(e.target.value)}
+          />
         </div>
         <label className="check">
-          <input
-            type="checkbox"
-            checked={showArchived}
-            onChange={(e) => setShowArchived(e.target.checked)}
-          />
-          mostrar arquivadas
+          <input type="checkbox" checked={showArchived} onChange={(e) => setShowArchived(e.target.checked)} />
+          arquivadas
         </label>
       </div>
 
@@ -108,7 +133,8 @@ function SolRow({
   const [showEv, setShowEv] = useState(false);
   const [title, setTitle] = useState(sol.title ?? "");
   const [clientId, setClientId] = useState<string>(sol.clientId ? String(sol.clientId) : "");
-  const number = sol.number;
+  const [status, setStatus] = useState<SolStatus>(sol.status);
+  const [tags, setTags] = useState(sol.tags ?? "");
 
   const invalidate = () => {
     qc.invalidateQueries({ queryKey: ["solicitations-all"] });
@@ -120,6 +146,8 @@ function SolRow({
       SolicitationsApi.update(sol.id, {
         clientId: clientId ? Number(clientId) : null,
         title: title.trim() || null,
+        status,
+        tags: tags.trim() || null,
         isArchived: sol.isArchived,
       }),
     onSuccess: () => {
@@ -135,6 +163,8 @@ function SolRow({
       SolicitationsApi.update(sol.id, {
         clientId: sol.clientId,
         title: sol.title,
+        status: sol.status,
+        tags: sol.tags,
         isArchived: !sol.isArchived,
       }),
     onSuccess: () => {
@@ -153,12 +183,34 @@ function SolRow({
     onError: (e) => onError(messageOf(e)),
   });
 
+  const duplicate = useMutation({
+    mutationFn: (num: string) =>
+      SolicitationsApi.create({
+        type: sol.type,
+        number: num,
+        clientId: sol.clientId,
+        title: sol.title,
+        tags: sol.tags,
+      }),
+    onSuccess: () => {
+      onError(null);
+      invalidate();
+    },
+    onError: (e) => onError(messageOf(e)),
+  });
+
+  const onDuplicate = () => {
+    const n = window.prompt(`Duplicar ${sol.code} — informe o número da nova ${sol.type}:`, "");
+    if (n && n.trim()) duplicate.mutate(n.trim());
+  };
+
   return (
     <div className={"sol-row" + (sol.isArchived ? " archived" : "")}>
       <div className="sol-main">
         <div className="sol-head">
           <span className={`chip chip-${sol.type.toLowerCase()}`}>{sol.type}</span>
-          <span className="code">{number}</span>
+          <span className="code">{sol.number}</span>
+          <span className={`status-badge st-${sol.status.toLowerCase()}`}>{STATUS_LABEL[sol.status]}</span>
           {sol.isArchived && <span className="arch-tag">arquivada</span>}
         </div>
         {editing ? (
@@ -166,8 +218,8 @@ function SolRow({
             <input
               className="input"
               value={title}
-              onChange={(e) => setTitle(e.target.value)}
               placeholder="Título / descrição"
+              onChange={(e) => setTitle(e.target.value)}
             />
             <select className="select" value={clientId} onChange={(e) => setClientId(e.target.value)}>
               <option value="">— sem empresa —</option>
@@ -177,11 +229,31 @@ function SolRow({
                 </option>
               ))}
             </select>
+            <select className="select" value={status} onChange={(e) => setStatus(e.target.value as SolStatus)}>
+              <option value="Aberta">Aberta</option>
+              <option value="EmAndamento">Em andamento</option>
+              <option value="Resolvida">Resolvida</option>
+            </select>
+            <input
+              className="input"
+              value={tags}
+              placeholder="etiquetas (vírgula)"
+              onChange={(e) => setTags(e.target.value)}
+            />
           </div>
         ) : (
           <div className="company-meta">
             {sol.clientName ?? "sem empresa"}
             {sol.title ? ` · ${sol.title}` : ""}
+            {sol.tags && (
+              <span className="tag-chips">
+                {sol.tags.split(",").map((t) => (
+                  <span key={t} className="tag-chip">
+                    #{t}
+                  </span>
+                ))}
+              </span>
+            )}
           </div>
         )}
       </div>
@@ -198,6 +270,8 @@ function SolRow({
                 setEditing(false);
                 setTitle(sol.title ?? "");
                 setClientId(sol.clientId ? String(sol.clientId) : "");
+                setStatus(sol.status);
+                setTags(sol.tags ?? "");
               }}
             >
               Cancelar
@@ -213,6 +287,9 @@ function SolRow({
             </button>
             <button className="btn btn-ghost btn-sm" onClick={() => setEditing(true)}>
               Editar
+            </button>
+            <button className="btn btn-ghost btn-sm" onClick={onDuplicate}>
+              Duplicar
             </button>
             <button className="btn btn-ghost btn-sm" onClick={() => toggleArchive.mutate()}>
               {sol.isArchived ? "Desarquivar" : "Arquivar"}

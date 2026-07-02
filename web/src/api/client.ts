@@ -30,6 +30,8 @@ export interface ClientItem {
   solicitationCount: number;
 }
 
+export type SolStatus = "Aberta" | "EmAndamento" | "Resolvida";
+
 export interface Solicitation {
   id: number;
   type: "SO" | "PA";
@@ -39,6 +41,8 @@ export interface Solicitation {
   clientName: string | null;
   title: string | null;
   description: string | null;
+  status: SolStatus;
+  tags: string | null;
   isArchived: boolean;
   createdAt: string;
 }
@@ -108,7 +112,18 @@ export interface UpdateSolicitationBody {
   clientName?: string | null;
   title?: string | null;
   description?: string | null;
+  status: SolStatus;
+  tags?: string | null;
   isArchived: boolean;
+}
+
+export interface CreateSolicitationBody {
+  type: "SO" | "PA";
+  number: string;
+  clientId?: number | null;
+  clientName?: string | null;
+  title?: string | null;
+  tags?: string | null;
 }
 
 export const SolicitationsApi = {
@@ -116,9 +131,13 @@ export const SolicitationsApi = {
     q?: string;
     clientId?: number;
     type?: "SO" | "PA";
+    status?: SolStatus;
+    tag?: string;
     date?: string;
     includeArchived?: boolean;
   }) => api.get<Solicitation[]>("/solicitations", { params }).then((r) => r.data),
+  create: (body: CreateSolicitationBody) =>
+    api.post<Solicitation>("/solicitations", body).then((r) => r.data),
   update: (id: number, body: UpdateSolicitationBody) =>
     api.put<Solicitation>(`/solicitations/${id}`, body).then((r) => r.data),
   remove: (id: number) => api.delete(`/solicitations/${id}`),

@@ -27,6 +27,8 @@ public class AppDbContext : DbContext
         b.Entity<Solicitation>(e =>
         {
             e.Property(x => x.Type).HasConversion<string>().HasMaxLength(2);
+            e.Property(x => x.Status).HasConversion<string>().HasMaxLength(20);
+            e.Property(x => x.Tags).HasMaxLength(400);
             e.Property(x => x.Number).IsRequired().HasMaxLength(40);
             e.HasIndex(x => new { x.UserId, x.Type, x.Number }).IsUnique();
             e.HasIndex(x => x.UserId);

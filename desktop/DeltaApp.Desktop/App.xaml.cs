@@ -29,5 +29,6 @@ public partial class App : Application
         };
 
         Config.Load();
+        Settings.Load();
     }
 }

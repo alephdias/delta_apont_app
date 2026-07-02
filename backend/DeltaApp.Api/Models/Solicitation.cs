@@ -6,6 +6,13 @@ public enum SolicitationType
     PA
 }
 
+public enum SolicitationStatus
+{
+    Aberta,
+    EmAndamento,
+    Resolvida
+}
+
 public class Solicitation
 {
     public int Id { get; set; }
@@ -18,6 +25,9 @@ public class Solicitation
 
     public string? Title { get; set; }
     public string? Description { get; set; }
+    public SolicitationStatus Status { get; set; } = SolicitationStatus.Aberta;
+    /// <summary>Etiquetas separadas por vírgula (ex.: "retrabalho,urgente").</summary>
+    public string? Tags { get; set; }
     public bool IsArchived { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 

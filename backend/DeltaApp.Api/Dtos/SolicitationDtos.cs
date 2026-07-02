@@ -9,13 +9,16 @@ public record CreateSolicitationDto(
     int? ClientId,
     string? ClientName,
     string? Title,
-    string? Description);
+    string? Description,
+    string? Tags);
 
 public record UpdateSolicitationDto(
     int? ClientId,
     string? ClientName,
     string? Title,
     string? Description,
+    SolicitationStatus Status,
+    string? Tags,
     bool IsArchived);
 
 public record SolicitationDto(
@@ -27,5 +30,7 @@ public record SolicitationDto(
     string? ClientName,
     string? Title,
     string? Description,
+    string Status,
+    string? Tags,
     bool IsArchived,
     DateTime CreatedAt);

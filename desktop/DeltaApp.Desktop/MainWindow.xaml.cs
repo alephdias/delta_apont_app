@@ -40,6 +40,7 @@ public partial class MainWindow : Window
 
         EmailText.Text = Session.Current?.Email ?? "";
         DatePick.SelectedDate = DateTime.Today;
+        AutoPauseCheck.IsChecked = Settings.AutoPauseWhenIdle;
 
         _ticker.Tick += Ticker_Tick;
         _ticker.Start();
@@ -183,6 +184,7 @@ public partial class MainWindow : Window
 
         // Auto-pausa por inatividade (10 min).
         if (_tickCount % 20 == 0 && _timer.IsRunning && !_autoHandling
+            && Settings.AutoPauseWhenIdle
             && NativeMethods.IdleTime() >= IdleThreshold)
         {
             _autoHandling = true;
@@ -280,6 +282,38 @@ public partial class MainWindow : Window
         TypeCombo.SelectedIndex = m.Groups[1].Value.ToUpperInvariant() == "PA" ? 1 : 0;
         NumberBox.Text = m.Groups[2].Value;
         NumberBox.Focus();
+    }
+
+    private async void ColarEIniciar_Click(object sender, RoutedEventArgs e)
+    {
+        var text = Clipboard.ContainsText() ? Clipboard.GetText() : string.Empty;
+        var m = Regex.Match(text, @"\b(SO|PA)[-\s]?(\d{5,})\b", RegexOptions.IgnoreCase);
+        if (!m.Success)
+        {
+            MessageBox.Show(this, "Não encontrei um número de SO/PA na área de transferência.", "Atenção");
+            return;
+        }
+        var type = m.Groups[1].Value.ToUpperInvariant();
+        var number = m.Groups[2].Value;
+        try
+        {
+            var sol = await _api.CreateSolicitationAsync(type, number, null, null, null);
+            if (sol is null)
+            {
+                MessageBox.Show(this, "Não foi possível criar a solicitação.", "Erro");
+                return;
+            }
+            await _timer.StartAsync(sol.Id);
+            await RefreshAllAsync();
+            SolGrid.SelectedItem = _solicitations.FirstOrDefault(s => s.Id == sol.Id);
+        }
+        catch (Exception ex) { MessageBox.Show(this, ex.Message, "Erro"); }
+    }
+
+    private void AutoPause_Changed(object sender, RoutedEventArgs e)
+    {
+        Settings.AutoPauseWhenIdle = AutoPauseCheck.IsChecked == true;
+        Settings.Save();
     }
 
     private async void Start_Click(object sender, RoutedEventArgs e)

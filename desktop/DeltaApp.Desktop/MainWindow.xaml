@@ -65,8 +65,12 @@
                                   VerticalContentAlignment="Center" ToolTip="Escolha um cliente ou digite um novo"/>
                         <TextBox x:Name="TitleBox" Margin="0,0,0,12" Tag="Título / descrição (opcional)"
                                  ToolTip="Título / descrição breve"/>
-                        <Button Content="Criar solicitação" Style="{StaticResource PrimaryButton}"
-                                HorizontalAlignment="Left" Click="Create_Click"/>
+                        <StackPanel Orientation="Horizontal">
+                            <Button Content="Criar solicitação" Style="{StaticResource PrimaryButton}" Click="Create_Click"/>
+                            <Button Content="Colar e iniciar ▶" Style="{StaticResource OkButton}" Margin="8,0,0,0"
+                                    Click="ColarEIniciar_Click"
+                                    ToolTip="Cria a SO/PA da área de transferência e já inicia o cronômetro"/>
+                        </StackPanel>
                     </StackPanel>
                 </Border>
 
@@ -109,6 +113,9 @@
                         </StackPanel>
                         <TextBlock Text="atalho global: Ctrl+Alt+P pausa/continua" Style="{StaticResource Eyebrow}"
                                    Margin="0,12,0,0"/>
+                        <CheckBox x:Name="AutoPauseCheck" Content="Pausar quando eu ficar ausente (10 min)"
+                                  Foreground="{StaticResource Graphite}" FontSize="12" Margin="0,8,0,0"
+                                  Checked="AutoPause_Changed" Unchecked="AutoPause_Changed"/>
                     </StackPanel>
                 </Border>
 

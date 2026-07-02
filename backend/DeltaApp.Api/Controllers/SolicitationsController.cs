@@ -19,7 +19,8 @@ public class SolicitationsController : ControllerBase
 
     [HttpGet]
     public async Task<ActionResult<IEnumerable<SolicitationDto>>> GetAll(
-        int? clientId, SolicitationType? type, DateOnly? date, string? q, bool includeArchived = false)
+        int? clientId, SolicitationType? type, SolicitationStatus? status, string? tag,
+        DateOnly? date, string? q, bool includeArchived = false)
     {
         var userId = User.GetUserId();
         var query = _db.Solicitations.Include(s => s.Client).Where(s => s.UserId == userId);
@@ -27,6 +28,8 @@ public class SolicitationsController : ControllerBase
         if (!includeArchived) query = query.Where(s => !s.IsArchived);
         if (clientId is not null) query = query.Where(s => s.ClientId == clientId);
         if (type is not null) query = query.Where(s => s.Type == type);
+        if (status is not null) query = query.Where(s => s.Status == status);
+        if (!string.IsNullOrWhiteSpace(tag)) query = query.Where(s => s.Tags != null && s.Tags.Contains(tag));
         if (!string.IsNullOrWhiteSpace(q))
             query = query.Where(s => s.Number.Contains(q) || (s.Title != null && s.Title.Contains(q)));
         if (date is not null)
@@ -67,7 +70,8 @@ public class SolicitationsController : ControllerBase
             Number = number,
             ClientId = clientId,
             Title = dto.Title?.Trim(),
-            Description = dto.Description
+            Description = dto.Description,
+            Tags = NormalizeTags(dto.Tags)
         };
         _db.Solicitations.Add(s);
         await _db.SaveChangesAsync();
@@ -86,6 +90,8 @@ public class SolicitationsController : ControllerBase
         s.ClientId = await ResolveClientIdAsync(userId, dto.ClientId, dto.ClientName);
         s.Title = dto.Title?.Trim();
         s.Description = dto.Description;
+        s.Status = dto.Status;
+        s.Tags = NormalizeTags(dto.Tags);
         s.IsArchived = dto.IsArchived;
         await _db.SaveChangesAsync();
         await _db.Entry(s).Reference(x => x.Client).LoadAsync();
@@ -130,6 +136,18 @@ public class SolicitationsController : ControllerBase
         return client.Id;
     }
 
+    private static string? NormalizeTags(string? raw)
+    {
+        if (string.IsNullOrWhiteSpace(raw)) return null;
+        var tags = raw
+            .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .Select(t => t.ToLowerInvariant())
+            .Distinct()
+            .Take(10)
+            .ToList();
+        return tags.Count == 0 ? null : string.Join(",", tags);
+    }
+
     private static string NormalizeNumber(SolicitationType type, string? raw)
     {
         var number = (raw ?? string.Empty).Trim();
@@ -141,5 +159,5 @@ public class SolicitationsController : ControllerBase
 
     private static SolicitationDto Map(Solicitation s) => new(
         s.Id, s.Type.ToString(), s.Number, s.Code, s.ClientId, s.Client?.Name,
-        s.Title, s.Description, s.IsArchived, s.CreatedAt);
+        s.Title, s.Description, s.Status.ToString(), s.Tags, s.IsArchived, s.CreatedAt);
 }
