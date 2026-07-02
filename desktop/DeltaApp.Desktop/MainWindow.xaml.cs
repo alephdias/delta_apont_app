@@ -455,15 +455,14 @@ public partial class MainWindow : Window
 
     private async Task CheckUpdateAsync()
     {
-        var (available, tag, url) = await UpdateService.CheckAsync();
+        var (available, tag, _) = await UpdateService.CheckAsync();
         if (!available) return;
         var r = MessageBox.Show(this,
-            $"Uma nova versão ({tag}) do aplicativo está disponível.\n\nBaixar agora?",
+            $"Uma nova versão ({tag}) está disponível.\n\nAtualizar agora? O app vai baixar, atualizar e reiniciar sozinho.",
             "Atualização disponível", MessageBoxButton.YesNo, MessageBoxImage.Information);
         if (r == MessageBoxResult.Yes)
         {
-            try { Process.Start(new ProcessStartInfo(url) { UseShellExecute = true }); }
-            catch { /* ignora */ }
+            new UpdateWindow { Owner = this }.Show();
         }
     }
 }
