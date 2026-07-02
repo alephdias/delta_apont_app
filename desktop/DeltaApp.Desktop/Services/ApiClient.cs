@@ -94,14 +94,17 @@ public class ApiClient
         SendAsync<ClientDto>(HttpMethod.Post, "clients", new { name });
 
     // ----- Solicitations -----
-    public Task<List<SolicitationDto>?> GetSolicitationsAsync(int? clientId = null)
+    public Task<List<SolicitationDto>?> GetSolicitationsAsync(DateOnly? date = null)
     {
-        var path = clientId is int id ? $"solicitations?clientId={id}" : "solicitations";
+        var path = date is DateOnly d ? $"solicitations?date={d:yyyy-MM-dd}" : "solicitations";
         return SendAsync<List<SolicitationDto>>(HttpMethod.Get, path);
     }
 
     public Task<SolicitationDto?> CreateSolicitationAsync(string type, string number, int? clientId, string? clientName, string? title) =>
         SendAsync<SolicitationDto>(HttpMethod.Post, "solicitations", new { type, number, clientId, clientName, title });
+
+    public Task UpdateNotesAsync(int solicitationId, string? description) =>
+        SendAsync(HttpMethod.Put, $"solicitations/{solicitationId}/notes", new { description });
 
     // ----- Timer -----
     public Task<ActiveTimerDto?> GetActiveAsync() => SendAsync<ActiveTimerDto>(HttpMethod.Get, "timer/active");

@@ -8,9 +8,10 @@ public enum SolicitationType
 
 public enum SolicitationStatus
 {
-    Aberta,
-    EmAndamento,
-    Resolvida
+    FilaDeEspera,
+    EmAtendimento,
+    Pausada,
+    Finalizado
 }
 
 public class Solicitation
@@ -25,7 +26,7 @@ public class Solicitation
 
     public string? Title { get; set; }
     public string? Description { get; set; }
-    public SolicitationStatus Status { get; set; } = SolicitationStatus.Aberta;
+    public SolicitationStatus Status { get; set; } = SolicitationStatus.FilaDeEspera;
     /// <summary>Etiquetas separadas por vírgula (ex.: "retrabalho,urgente").</summary>
     public string? Tags { get; set; }
     public bool IsArchived { get; set; }

@@ -30,7 +30,7 @@ export interface ClientItem {
   solicitationCount: number;
 }
 
-export type SolStatus = "Aberta" | "EmAndamento" | "Resolvida";
+export type SolStatus = "FilaDeEspera" | "EmAtendimento" | "Pausada" | "Finalizado";
 
 export interface Solicitation {
   id: number;

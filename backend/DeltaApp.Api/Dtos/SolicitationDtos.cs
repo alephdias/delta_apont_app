@@ -21,6 +21,8 @@ public record UpdateSolicitationDto(
     string? Tags,
     bool IsArchived);
 
+public record UpdateNotesDto(string? Description);
+
 public record SolicitationDto(
     int Id,
     string Type,

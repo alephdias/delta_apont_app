@@ -206,5 +206,47 @@
             <Setter Property="RowHeight" Value="34"/>
             <Setter Property="ColumnHeaderStyle" Value="{StaticResource GridHeader}"/>
         </Style>
+
+        <!-- DatePicker limpo -->
+        <Style TargetType="DatePickerTextBox">
+            <Setter Property="Foreground" Value="{StaticResource Ink}"/>
+            <Setter Property="FontFamily" Value="{StaticResource Mono}"/>
+            <Setter Property="FontSize" Value="12.5"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="DatePickerTextBox">
+                        <ScrollViewer x:Name="PART_ContentHost" Focusable="False"
+                                      HorizontalScrollBarVisibility="Hidden" VerticalScrollBarVisibility="Hidden"
+                                      VerticalAlignment="Center"/>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        <Style TargetType="DatePicker">
+            <Setter Property="Foreground" Value="{StaticResource Ink}"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="DatePicker">
+                        <Border Background="{StaticResource Surface}" BorderBrush="{StaticResource Line2}"
+                                BorderThickness="1" CornerRadius="7" Padding="10,0,6,0">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <DatePickerTextBox x:Name="PART_TextBox" Grid.Column="0" VerticalAlignment="Center"
+                                                   Background="Transparent" BorderThickness="0"/>
+                                <Button x:Name="PART_Button" Grid.Column="1" Width="26" Focusable="False"
+                                        Background="Transparent" BorderThickness="0" Cursor="Hand"
+                                        Foreground="{StaticResource Muted}" Content="📅" FontSize="12"/>
+                                <Popup x:Name="PART_Popup" StaysOpen="False" AllowsTransparency="True"
+                                       Placement="Bottom" PlacementTarget="{Binding ElementName=PART_TextBox}"/>
+                            </Grid>
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
     </Application.Resources>
 </Application>

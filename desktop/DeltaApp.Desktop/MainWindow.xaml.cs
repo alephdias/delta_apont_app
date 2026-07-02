@@ -73,8 +73,7 @@ public partial class MainWindow : Window
 
             _clients = await _api.GetClientsAsync() ?? new();
             ClientCombo.ItemsSource = _clients;
-            _solicitations = await _api.GetSolicitationsAsync() ?? new();
-            SolGrid.ItemsSource = _solicitations;
+            await LoadSolicitationsAsync();
             await LoadDayAsync();
             await _timer.RefreshAsync();
         }
@@ -82,6 +81,50 @@ public partial class MainWindow : Window
         {
             MessageBox.Show(this, ex.Message, "Erro", MessageBoxButton.OK, MessageBoxImage.Warning);
         }
+    }
+
+    private async Task LoadSolicitationsAsync()
+    {
+        DateOnly? date = OnlyDayCheck.IsChecked == true ? SelectedDate : null;
+        _solicitations = await _api.GetSolicitationsAsync(date) ?? new();
+        SolGrid.ItemsSource = _solicitations;
+    }
+
+    private async void OnlyDay_Changed(object sender, RoutedEventArgs e)
+    {
+        if (IsLoaded) await LoadSolicitationsAsync();
+    }
+
+    private void SolGrid_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (SolGrid.SelectedItem is SolicitationDto sol)
+        {
+            var client = string.IsNullOrEmpty(sol.ClientName) ? "sem empresa" : sol.ClientName;
+            SelectedHeader.Text = $"{sol.Code}  ·  {client}";
+            NotesBox.Text = sol.Description ?? "";
+        }
+        else
+        {
+            SelectedHeader.Text = "Nenhuma solicitação selecionada";
+            NotesBox.Text = "";
+        }
+    }
+
+    private async void SaveNotes_Click(object sender, RoutedEventArgs e)
+    {
+        if (SolGrid.SelectedItem is not SolicitationDto sol)
+        {
+            MessageBox.Show(this, "Selecione uma solicitação na lista.", "Atenção");
+            return;
+        }
+        try
+        {
+            var text = string.IsNullOrWhiteSpace(NotesBox.Text) ? null : NotesBox.Text.Trim();
+            await _api.UpdateNotesAsync(sol.Id, text);
+            sol.Description = text;
+            MessageBox.Show(this, "Observações salvas.", "Delta Decisão");
+        }
+        catch (Exception ex) { MessageBox.Show(this, ex.Message, "Erro"); }
     }
 
     private async Task LoadDayAsync()
@@ -235,7 +278,9 @@ public partial class MainWindow : Window
 
     private async void DatePick_Changed(object sender, SelectionChangedEventArgs e)
     {
-        if (IsLoaded) await LoadDayAsync();
+        if (!IsLoaded) return;
+        await LoadDayAsync();
+        if (OnlyDayCheck.IsChecked == true) await LoadSolicitationsAsync();
     }
 
     private async void Create_Click(object sender, RoutedEventArgs e)
@@ -327,6 +372,7 @@ public partial class MainWindow : Window
         {
             await _timer.StartAsync(sol.Id);
             await LoadDayAsync();
+            await LoadSolicitationsAsync();
         }
         catch (Exception ex) { MessageBox.Show(this, ex.Message, "Erro"); }
     }
@@ -337,6 +383,7 @@ public partial class MainWindow : Window
         {
             await _timer.PauseAsync();
             await LoadDayAsync();
+            await LoadSolicitationsAsync();
         }
         catch (Exception ex) { MessageBox.Show(this, ex.Message, "Erro"); }
     }
@@ -349,6 +396,7 @@ public partial class MainWindow : Window
         {
             await _timer.FinishAsync(id);
             await LoadDayAsync();
+            await LoadSolicitationsAsync();
         }
         catch (Exception ex) { MessageBox.Show(this, ex.Message, "Erro"); }
     }

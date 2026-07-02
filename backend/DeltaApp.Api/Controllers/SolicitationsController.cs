@@ -98,6 +98,17 @@ public class SolicitationsController : ControllerBase
         return Map(s);
     }
 
+    [HttpPut("{id:int}/notes")]
+    public async Task<IActionResult> UpdateNotes(int id, UpdateNotesDto dto)
+    {
+        var userId = User.GetUserId();
+        var s = await _db.Solicitations.FirstOrDefaultAsync(x => x.Id == id && x.UserId == userId);
+        if (s is null) return NotFound();
+        s.Description = dto.Description;
+        await _db.SaveChangesAsync();
+        return NoContent();
+    }
+
     [HttpDelete("{id:int}")]
     public async Task<IActionResult> Delete(int id)
     {

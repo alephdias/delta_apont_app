@@ -44,6 +44,7 @@ public class TimerController : ControllerBase
         var now = DateTime.UtcNow;
         await CloseOpenIntervalsAsync(userId, now);
 
+        sol.Status = SolicitationStatus.EmAtendimento;
         var interval = new WorkInterval { UserId = userId, SolicitationId = sol.Id, StartedAt = now };
         _db.WorkIntervals.Add(interval);
         await _db.SaveChangesAsync();
@@ -79,6 +80,7 @@ public class TimerController : ControllerBase
             .FirstOrDefaultAsync(s => s.Id == dto.SolicitationId && s.UserId == userId);
         if (sol is null) return NotFound();
 
+        sol.Status = SolicitationStatus.Finalizado;
         var workDate = AppTime.TodayLocal();
         var dayIntervals = await DayIntervalsAsync(userId, dto.SolicitationId, workDate);
         var realMin = TimeMath.RealMinutes(dayIntervals, now);
@@ -105,8 +107,15 @@ public class TimerController : ControllerBase
 
     private async Task CloseOpenIntervalsAsync(string userId, DateTime now)
     {
-        var open = await _db.WorkIntervals.Where(i => i.UserId == userId && i.EndedAt == null).ToListAsync();
-        foreach (var o in open) o.EndedAt = now;
+        var open = await _db.WorkIntervals
+            .Include(i => i.Solicitation)
+            .Where(i => i.UserId == userId && i.EndedAt == null)
+            .ToListAsync();
+        foreach (var o in open)
+        {
+            o.EndedAt = now;
+            if (o.Solicitation is not null) o.Solicitation.Status = SolicitationStatus.Pausada;
+        }
     }
 
     private async Task<List<WorkInterval>> DayIntervalsAsync(string userId, int solicitationId, DateOnly workDate)

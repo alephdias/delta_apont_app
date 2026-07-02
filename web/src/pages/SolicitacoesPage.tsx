@@ -12,10 +12,13 @@ function messageOf(e: unknown): string {
 type TypeFilter = "" | "SO" | "PA";
 
 const STATUS_LABEL: Record<SolStatus, string> = {
-  Aberta: "Aberta",
-  EmAndamento: "Em andamento",
-  Resolvida: "Resolvida",
+  FilaDeEspera: "Na fila de espera",
+  EmAtendimento: "Em atendimento",
+  Pausada: "Pausada",
+  Finalizado: "Finalizado",
 };
+
+const STATUS_OPTIONS: SolStatus[] = ["FilaDeEspera", "EmAtendimento", "Pausada", "Finalizado"];
 
 export function SolicitacoesPage() {
   const { data: all, isLoading } = useQuery({
@@ -80,9 +83,11 @@ export function SolicitacoesPage() {
             aria-label="Status"
           >
             <option value="">Todos status</option>
-            <option value="Aberta">Aberta</option>
-            <option value="EmAndamento">Em andamento</option>
-            <option value="Resolvida">Resolvida</option>
+            {STATUS_OPTIONS.map((s) => (
+              <option key={s} value={s}>
+                {STATUS_LABEL[s]}
+              </option>
+            ))}
           </select>
           <input
             className="input"
@@ -230,9 +235,11 @@ function SolRow({
               ))}
             </select>
             <select className="select" value={status} onChange={(e) => setStatus(e.target.value as SolStatus)}>
-              <option value="Aberta">Aberta</option>
-              <option value="EmAndamento">Em andamento</option>
-              <option value="Resolvida">Resolvida</option>
+              {STATUS_OPTIONS.map((s) => (
+                <option key={s} value={s}>
+                  {STATUS_LABEL[s]}
+                </option>
+              ))}
             </select>
             <input
               className="input"

@@ -16,7 +16,18 @@ public class SolicitationDto
     public int? ClientId { get; set; }
     public string? ClientName { get; set; }
     public string? Title { get; set; }
+    public string? Description { get; set; }
+    public string Status { get; set; } = "FilaDeEspera";
     public bool IsArchived { get; set; }
+
+    public string StatusLabel => Status switch
+    {
+        "FilaDeEspera" => "Na fila",
+        "EmAtendimento" => "Em atendimento",
+        "Pausada" => "Pausada",
+        "Finalizado" => "Finalizado",
+        _ => Status
+    };
 }
 
 public class ActiveTimerDto
