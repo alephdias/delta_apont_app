@@ -27,6 +27,8 @@
                 <Button Content="Sair" Style="{StaticResource DarkGhost}" DockPanel.Dock="Right" Click="Logout_Click"/>
                 <Button Content="🕒 Janelinha" Style="{StaticResource DarkGhost}" DockPanel.Dock="Right"
                         Margin="0,0,8,0" Click="OpenWidget_Click"/>
+                <Button Content="🎫 TOPdesk" Style="{StaticResource DarkGhost}" DockPanel.Dock="Right"
+                        Margin="0,0,8,0" Click="OpenTopdesk_Click"/>
                 <TextBlock x:Name="EmailText" Foreground="#9AA3AF" FontSize="12" VerticalAlignment="Center"
                            DockPanel.Dock="Right" Margin="0,0,16,0"/>
             </DockPanel>
@@ -148,8 +150,12 @@
                                 </ControlTemplate>
                             </TextBox.Template>
                         </TextBox>
-                        <Button Content="Salvar observações" Style="{StaticResource GhostButton}"
-                                HorizontalAlignment="Left" Margin="0,8,0,16" Click="SaveNotes_Click"/>
+                        <StackPanel Orientation="Horizontal" Margin="0,8,0,16">
+                            <Button Content="Salvar observações" Style="{StaticResource GhostButton}" Click="SaveNotes_Click"/>
+                            <Button Content="🎫 Lançar no TOPdesk" Style="{StaticResource PrimaryButton}" Margin="8,0,0,0"
+                                    Click="LancarTopdesk_Click"
+                                    ToolTip="Abre a solicitação no TOPdesk e preenche o apontamento (você confere e clica em Registrar)"/>
+                        </StackPanel>
 
                         <TextBlock Text="EVIDÊNCIAS" Style="{StaticResource Eyebrow}" Margin="0,0,0,4"/>
                         <StackPanel Orientation="Horizontal">

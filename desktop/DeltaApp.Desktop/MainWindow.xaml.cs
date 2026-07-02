@@ -22,6 +22,7 @@ public partial class MainWindow : Window
 
     private List<ClientDto> _clients = new();
     private List<SolicitationDto> _solicitations = new();
+    private List<DayEntryDto> _dayEntries = new();
     private TimerWidget? _widget;
     private int _targetMinutes = 360;
 
@@ -130,6 +131,7 @@ public partial class MainWindow : Window
     private async Task LoadDayAsync()
     {
         var entries = await _api.GetDayEntriesAsync(SelectedDate) ?? new();
+        _dayEntries = entries;
         DayGrid.ItemsSource = entries;
         var real = entries.Sum(e => e.RealMinutes);
         var adj = entries.Sum(e => e.AdjustedMinutes);
@@ -491,6 +493,49 @@ public partial class MainWindow : Window
         {
             _widget.Activate();
         }
+    }
+
+    private TopdeskWindow? _topdesk;
+    private void OpenTopdesk_Click(object sender, RoutedEventArgs e) => ShowTopdesk();
+
+    private TopdeskWindow ShowTopdesk()
+    {
+        if (_topdesk is null || !_topdesk.IsVisible)
+        {
+            _topdesk = new TopdeskWindow { Owner = this };
+            _topdesk.Show();
+        }
+        else
+        {
+            _topdesk.Activate();
+        }
+        return _topdesk;
+    }
+
+    private async void LancarTopdesk_Click(object sender, RoutedEventArgs e)
+    {
+        if (SolGrid.SelectedItem is not SolicitationDto sol)
+        {
+            MessageBox.Show(this, "Selecione uma solicitação na lista.", "Atenção");
+            return;
+        }
+
+        var entry = _dayEntries.FirstOrDefault(x => x.SolicitationId == sol.Id);
+        var adj = entry?.AdjustedMinutes ?? 0;
+        if (adj <= 0)
+        {
+            MessageBox.Show(this,
+                $"A solicitação {sol.Code} não tem tempo apontado em {SelectedDate:dd/MM/yyyy}.\n\n" +
+                "Cronometre (ou finalize) essa solicitação no dia antes de lançar no TOPdesk.",
+                "Nada pra lançar");
+            return;
+        }
+
+        var tempo = $"{adj / 60}:{adj % 60:00}";                        // 90 -> "1:30"
+        var obs = string.IsNullOrWhiteSpace(NotesBox.Text) ? "" : NotesBox.Text.Trim();
+
+        var win = ShowTopdesk();
+        await win.LancarApontamentoAsync(sol.Code, tempo, obs);
     }
 
     private void Logout_Click(object sender, RoutedEventArgs e)

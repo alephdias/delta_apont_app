@@ -1,0 +1,40 @@
+<Window x:Class="DeltaApp.Desktop.TopdeskWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:wv2="clr-namespace:Microsoft.Web.WebView2.Wpf;assembly=Microsoft.Web.WebView2.Wpf"
+        Title="TOPdesk — bancada de descoberta" Height="820" Width="1200" MinHeight="500" MinWidth="900"
+        WindowStartupLocation="CenterScreen" FontFamily="Segoe UI">
+    <DockPanel>
+        <!-- Barra superior -->
+        <Border DockPanel.Dock="Top" Background="#1B1F24" Padding="10,8">
+            <StackPanel Orientation="Horizontal">
+                <Button Content="↺ Login" Click="Login_Click" Margin="0,0,8,0" Padding="10,4"/>
+                <TextBox x:Name="SoBox" Width="200" VerticalContentAlignment="Center"
+                         ToolTip="Ex.: SO-25081225 ou uma URL http..."/>
+                <Button Content="Abrir" Click="Open_Click" Margin="6,0,0,0" Padding="10,4"/>
+                <Button Content="📄 Capturar HTML" Click="Capture_Click" Margin="16,0,0,0" Padding="10,4"/>
+                <Button Content="🔎 Capturar campos" Click="CaptureFields_Click" Margin="6,0,0,0" Padding="10,4"/>
+                <TextBlock x:Name="Status" Foreground="#9AA3AF" VerticalAlignment="Center" Margin="16,0,0,0"/>
+            </StackPanel>
+        </Border>
+
+        <!-- Console de JS (embaixo) -->
+        <Border DockPanel.Dock="Bottom" Background="#0F1216" Padding="10,8">
+            <DockPanel>
+                <Button DockPanel.Dock="Right" Content="Rodar JS ▶" Click="RunJs_Click"
+                        Margin="8,0,0,0" Padding="10,4" VerticalAlignment="Top"/>
+                <StackPanel>
+                    <TextBox x:Name="JsBox" AcceptsReturn="True" Height="56" FontFamily="Consolas"
+                             Background="#161A1F" Foreground="#E7EAEF" TextWrapping="Wrap"
+                             VerticalScrollBarVisibility="Auto"
+                             ToolTip="Cole aqui um trecho de JS que o Claude te passar e clique em Rodar"/>
+                    <TextBox x:Name="JsResult" IsReadOnly="True" Height="70" FontFamily="Consolas" Margin="0,6,0,0"
+                             Background="#161A1F" Foreground="#7FBF7F" TextWrapping="Wrap"
+                             VerticalScrollBarVisibility="Auto"/>
+                </StackPanel>
+            </DockPanel>
+        </Border>
+
+        <wv2:WebView2 x:Name="Web"/>
+    </DockPanel>
+</Window>

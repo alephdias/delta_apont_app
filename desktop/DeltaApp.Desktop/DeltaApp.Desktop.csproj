@@ -7,12 +7,15 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <UseWPF>true</UseWPF>
     <ApplicationIcon>Assets\app.ico</ApplicationIcon>
-    <Version>0.2.2</Version>
+    <Version>0.3.0</Version>
     <AssemblyTitle>Delta Decisão</AssemblyTitle>
     <Product>Delta Decisão</Product>
+    <!-- Necessário p/ o WebView2Loader.dll (nativo) funcionar no exe single-file -->
+    <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Microsoft.Web.WebView2" Version="1.0.4022.49" />
     <PackageReference Include="System.Security.Cryptography.ProtectedData" Version="9.0.8" />
   </ItemGroup>
 
