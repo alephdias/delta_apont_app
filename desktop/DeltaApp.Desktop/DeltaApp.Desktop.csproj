@@ -7,7 +7,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <UseWPF>true</UseWPF>
     <ApplicationIcon>Assets\app.ico</ApplicationIcon>
-    <Version>0.3.0</Version>
+    <Version>0.4.0</Version>
     <AssemblyTitle>Delta Decisão</AssemblyTitle>
     <Product>Delta Decisão</Product>
     <!-- Necessário p/ o WebView2Loader.dll (nativo) funcionar no exe single-file -->
