@@ -177,6 +177,9 @@
                             <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
                                 <DatePicker x:Name="DatePick" Width="130" SelectedDateChanged="DatePick_Changed"/>
                                 <Button Content="Atualizar" Style="{StaticResource GhostButton}" Margin="8,0,0,0" Click="Refresh_Click"/>
+                                <Button Content="🎫 Lançar o dia todo" Style="{StaticResource GhostButton}" Margin="8,0,0,0"
+                                        Click="LancarDiaTopdesk_Click"
+                                        ToolTip="Lança no TOPdesk todas as solicitações do dia com tempo apontado, uma a uma (você confere e clica em Registrar a cada uma)"/>
                             </StackPanel>
                         </Grid>
                         <TextBlock x:Name="DayTotals" DockPanel.Dock="Top" Foreground="{StaticResource Muted}"

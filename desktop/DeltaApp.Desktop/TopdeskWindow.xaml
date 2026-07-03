@@ -18,6 +18,22 @@
             </StackPanel>
         </Border>
 
+        <!-- Barra de lote (visível só durante "Lançar o dia todo") -->
+        <Border x:Name="BatchBar" DockPanel.Dock="Top" Background="#24303B" Padding="10,8"
+                Visibility="Collapsed">
+            <DockPanel>
+                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                    <Button x:Name="BatchNext" Content="✓ Registrei, próxima" Click="BatchNext_Click"
+                            Padding="10,4" Margin="0,0,6,0"/>
+                    <Button x:Name="BatchSkip" Content="↷ Pular esta" Click="BatchSkip_Click"
+                            Padding="10,4" Margin="0,0,6,0"/>
+                    <Button Content="■ Parar lote" Click="BatchStop_Click" Padding="10,4"/>
+                </StackPanel>
+                <TextBlock x:Name="BatchText" Foreground="#E7EAEF" VerticalAlignment="Center"
+                           TextWrapping="Wrap" Margin="0,0,12,0"/>
+            </DockPanel>
+        </Border>
+
         <!-- Console de JS (embaixo) -->
         <Border DockPanel.Dock="Bottom" Background="#0F1216" Padding="10,8">
             <DockPanel>

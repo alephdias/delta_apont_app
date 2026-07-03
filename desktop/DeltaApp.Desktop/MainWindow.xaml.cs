@@ -538,6 +538,39 @@ public partial class MainWindow : Window
         await win.LancarApontamentoAsync(sol.Code, tempo, obs);
     }
 
+    private async void LancarDiaTopdesk_Click(object sender, RoutedEventArgs e)
+    {
+        var prontas = _dayEntries.Where(x => x.AdjustedMinutes > 0 && !x.IsRunning).ToList();
+        var rodando = _dayEntries.Count(x => x.IsRunning);
+
+        if (prontas.Count == 0)
+        {
+            MessageBox.Show(this,
+                $"Nenhuma solicitação com tempo apontado em {SelectedDate:dd/MM/yyyy}." +
+                (rodando > 0 ? "\n\n(Há cronômetro rodando — pause/finalize antes de lançar.)" : ""),
+                "Nada pra lançar");
+            return;
+        }
+
+        static string Hhmm(int min) => $"{min / 60}:{min % 60:00}";
+        var totalMin = prontas.Sum(x => x.AdjustedMinutes);
+        var lista = string.Join("\n", prontas.Select(x => $"  •  {x.Code}  ({Hhmm(x.AdjustedMinutes)})"));
+        var aviso = rodando > 0 ? $"\n\n{rodando} solicitação(ões) com cronômetro rodando ficará(ão) de fora." : "";
+
+        var r = MessageBox.Show(this,
+            $"Vou preencher {prontas.Count} solicitação(ões) no TOPdesk, uma a uma (total {Hhmm(totalMin)}):\n\n{lista}\n\n" +
+            $"A cada uma, você confere e clica em Registrar no TOPdesk e depois em \"Registrei, próxima\".{aviso}\n\nContinuar?",
+            "Lançar o dia todo", MessageBoxButton.YesNo, MessageBoxImage.Question);
+        if (r != MessageBoxResult.Yes) return;
+
+        var itens = prontas
+            .Select(x => new TopdeskWindow.LoteItem(x.Code, Hhmm(x.AdjustedMinutes), x.Notes?.Trim() ?? ""))
+            .ToList();
+
+        var win = ShowTopdesk();
+        await win.LancarLoteAsync(itens);
+    }
+
     private void Logout_Click(object sender, RoutedEventArgs e)
     {
         Session.Current = null;

@@ -26,6 +26,7 @@ public partial class TopdeskWindow : Window
     {
         InitializeComponent();
         Loaded += async (_, _) => await InitAsync();
+        Closed += (_, _) => _batchTcs?.TrySetResult(BatchAction.Stop);
     }
 
     private bool Ready => Web.CoreWebView2 is not null;
@@ -102,8 +103,11 @@ public partial class TopdeskWindow : Window
     /// <summary>Centro do elemento (pelo handle) em coords do viewport, somando offsets dos iframes.</summary>
     private async Task<(double x, double y)?> GetCenterAsync(string handle)
     {
+        // Ignora elementos invisíveis (rect zerado): com vários cards abertos no mango,
+        // os cards de fundo têm os MESMOS handles — só o card ativo tem tamanho.
         var js =
-            "(function(){function find(h,d){d=d||document;var e=d.querySelector('[handle=\"'+h+'\"]');if(e)return e;" +
+            "(function(){function find(h,d){d=d||document;var es=d.querySelectorAll('[handle=\"'+h+'\"]');" +
+            "for(var k=0;k<es.length;k++){var r=es[k].getBoundingClientRect();if(r.width>0&&r.height>0)return es[k];}" +
             "var f=d.querySelectorAll('iframe,frame');for(var i=0;i<f.length;i++){try{var c=f[i].contentDocument;if(c){var r=find(h,c);if(r)return r;}}catch(e){}}return null;}" +
             "var el=find('" + handle + "');if(!el)return 'null';" +
             "function abs(el){var r=el.getBoundingClientRect();var x=r.left,y=r.top;var w=el.ownerDocument.defaultView;" +
@@ -222,7 +226,8 @@ public partial class TopdeskWindow : Window
     private async Task<string> FocusSelectAsync(string handle)
     {
         var js =
-            "(function(){function find(h,d){d=d||document;var e=d.querySelector('[handle=\"'+h+'\"]');if(e)return e;" +
+            "(function(){function find(h,d){d=d||document;var es=d.querySelectorAll('[handle=\"'+h+'\"]');" +
+            "for(var k=0;k<es.length;k++){var r=es[k].getBoundingClientRect();if(r.width>0&&r.height>0)return es[k];}" +
             "var f=d.querySelectorAll('iframe,frame');for(var i=0;i<f.length;i++){try{var c=f[i].contentDocument;if(c){var r=find(h,c);if(r)return r;}}catch(e){}}return null;}" +
             "var el=find('" + handle + "');if(!el)return 'nf';" +
             "if(el.tagName!=='INPUT'&&el.tagName!=='TEXTAREA'){var inp=el.querySelector('input,textarea');if(inp)el=inp;}" +
@@ -234,7 +239,8 @@ public partial class TopdeskWindow : Window
     private async Task<string> ReadValuesAsync()
     {
         var js =
-            "(function(){function find(h,d){d=d||document;var e=d.querySelector('[handle=\"'+h+'\"]');if(e)return e;" +
+            "(function(){function find(h,d){d=d||document;var es=d.querySelectorAll('[handle=\"'+h+'\"]');" +
+            "for(var k=0;k<es.length;k++){var r=es[k].getBoundingClientRect();if(r.width>0&&r.height>0)return es[k];}" +
             "var f=d.querySelectorAll('iframe,frame');for(var i=0;i<f.length;i++){try{var c=f[i].contentDocument;if(c){var r=find(h,c);if(r)return r;}}catch(e){}}return null;}" +
             "var hs=['trtimetaken_container_container','trreason','trnotes'];var o={};" +
             "hs.forEach(function(h){var el=find(h);if(el&&el.tagName!=='INPUT'&&el.tagName!=='TEXTAREA'){var i=el.querySelector('input,textarea');if(i)el=i;}o[h]=el?el.value:'nf';});" +
@@ -359,13 +365,12 @@ public partial class TopdeskWindow : Window
         catch { return null; }
     }
 
-    /// <summary>Fluxo real: abre a SO, abre o modal e preenche com o tempo/observação da solicitação.</summary>
-    public async Task LancarApontamentoAsync(string code, string tempoHHMM, string observacao)
+    /// <summary>Navegador pronto e logado como operador? (mostra aviso se não)</summary>
+    private async Task<bool> EnsureLoggedInAsync()
     {
-        Activate();
         // espera o navegador iniciar (janela recém-aberta)
         for (int i = 0; i < 25 && !Ready; i++) await Task.Delay(300);
-        if (!Ready) { Status.Text = "o navegador ainda não iniciou — tente de novo"; return; }
+        if (!Ready) { Status.Text = "o navegador ainda não iniciou — tente de novo"; return false; }
 
         var url = Web.CoreWebView2.Source ?? "";
         if (url.Contains("/login", StringComparison.OrdinalIgnoreCase) || url.Contains("/public/", StringComparison.OrdinalIgnoreCase))
@@ -374,20 +379,95 @@ public partial class TopdeskWindow : Window
             MessageBox.Show(this,
                 "Entre como operador no TOPdesk (aqui nesta janela) e depois clique em 'Lançar no TOPdesk' novamente.",
                 "TOPdesk");
-            return;
+            return false;
         }
+        return true;
+    }
+
+    /// <summary>Fluxo real: abre a SO, abre o modal e preenche com o tempo/observação da solicitação.
+    /// Devolve true se o modal foi preenchido (falta só o usuário conferir e Registrar).</summary>
+    public async Task<bool> LancarApontamentoAsync(string code, string tempoHHMM, string observacao)
+    {
+        Activate();
+        if (!await EnsureLoggedInAsync()) return false;
 
         try
         {
             Status.Text = $"lançando {code} ({tempoHHMM})...";
             await OpenSolicitationAsync(code);
             await Task.Delay(3000);
-            if (!await OpenTimeModalAsync()) return;
+            if (!await OpenTimeModalAsync()) return false;
             await FillTimeModalAsync(tempoHHMM, "Atendimento", observacao);
             Status.Text = $"{code}: preenchido ({tempoHHMM}). Confira e clique em Registrar no TOPdesk.";
+            return true;
         }
-        catch (Exception ex) { Status.Text = "erro ao lançar: " + ex.Message; }
+        catch (Exception ex) { Status.Text = "erro ao lançar: " + ex.Message; return false; }
     }
+
+    // ----- Lote: lança várias solicitações, parando em cada uma pro usuário Registrar -----
+
+    public record LoteItem(string Code, string TempoHHMM, string Observacao);
+
+    private enum BatchAction { Next, Skip, Stop }
+
+    private TaskCompletionSource<BatchAction>? _batchTcs;
+
+    /// <summary>Lança os itens um a um; entre um e outro, espera o usuário conferir/Registrar
+    /// e clicar "Próxima" na barra de lote (humano no loop, como no lançamento individual).</summary>
+    public async Task LancarLoteAsync(IReadOnlyList<LoteItem> itens)
+    {
+        Activate();
+        if (_batchTcs is not null) { Status.Text = "já existe um lote em andamento"; return; }
+        if (!await EnsureLoggedInAsync()) return;
+
+        int feitas = 0;
+        var puladas = new List<string>();
+
+        try
+        {
+            for (int i = 0; i < itens.Count; i++)
+            {
+                var item = itens[i];
+                BatchText.Text = $"{i + 1}/{itens.Count} · lançando {item.Code} ({item.TempoHHMM})...";
+                BatchBar.Visibility = Visibility.Visible;
+                BatchNext.Visibility = Visibility.Collapsed;
+                BatchSkip.Visibility = Visibility.Collapsed;
+
+                var ok = await LancarApontamentoAsync(item.Code, item.TempoHHMM, item.Observacao);
+
+                if (ok)
+                {
+                    BatchText.Text = $"{i + 1}/{itens.Count} · {item.Code} preenchida ({item.TempoHHMM}). " +
+                                     "Confira e clique em Registrar no TOPdesk; depois, aqui em \"Registrei, próxima\".";
+                    BatchNext.Visibility = Visibility.Visible;
+                }
+                else
+                {
+                    BatchText.Text = $"{i + 1}/{itens.Count} · {item.Code} falhou: {Status.Text}";
+                    BatchSkip.Visibility = Visibility.Visible;
+                }
+
+                _batchTcs = new TaskCompletionSource<BatchAction>(TaskCreationOptions.RunContinuationsAsynchronously);
+                var action = await _batchTcs.Task;
+                _batchTcs = null;
+
+                if (action == BatchAction.Stop) { puladas.AddRange(itens.Skip(i + 1).Select(x => x.Code)); break; }
+                if (ok && action != BatchAction.Skip) feitas++;
+                else puladas.Add(item.Code);
+            }
+        }
+        finally
+        {
+            _batchTcs = null;
+            BatchBar.Visibility = Visibility.Collapsed;
+            Status.Text = $"lote: {feitas} preenchida(s)" +
+                          (puladas.Count > 0 ? $", {puladas.Count} pulada(s): {string.Join(", ", puladas)}" : ".");
+        }
+    }
+
+    private void BatchNext_Click(object sender, RoutedEventArgs e) => _batchTcs?.TrySetResult(BatchAction.Next);
+    private void BatchSkip_Click(object sender, RoutedEventArgs e) => _batchTcs?.TrySetResult(BatchAction.Skip);
+    private void BatchStop_Click(object sender, RoutedEventArgs e) => _batchTcs?.TrySetResult(BatchAction.Stop);
 
     private async void RunJs_Click(object sender, RoutedEventArgs e)
     {
